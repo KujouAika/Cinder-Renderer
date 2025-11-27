@@ -16,13 +16,13 @@ Application::Application() {
     m_window = std::make_unique<Window>("Vulkan Renderer", 800, 600);
 
     // 3. 创建 Vulkan 上下文 (之后再实现)
-    // m_context = std::make_unique<DeviceContext>(*m_window);
+    m_context = std::make_unique<DeviceContext>(*m_window);
 }
 
 Application::~Application() {
     // 确保 Window 和 Context 先被销毁 (智能指针会自动处理，但逻辑上要注意)
     m_window.reset();
-    // m_context.reset();
+    m_context.reset();
 
     // 4. 退出 SDL，清理所有子系统
     SDL_Quit();

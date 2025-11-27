@@ -1,6 +1,6 @@
-#include <string>
 #include "Core/Window.h"
 #include <stdexcept>
+#include <vulkan/vulkan.h>
 
 Window::Window(const std::string& title, int width, int height)
     : m_width(width), m_height(height) {
@@ -28,4 +28,28 @@ Window::~Window() {
     if (m_window) {
         SDL_DestroyWindow(m_window);
     }
+}
+
+std::vector<const char*> Window::getVulkanExtensions() const
+{
+    unsigned int count = 0;
+
+    // 参数说明：窗口句柄, 数量指针, 名称数组(传nullptr表示只查数量)
+    if (!SDL_Vulkan_GetInstanceExtensions(m_window, &count, nullptr)) {
+        throw std::runtime_error("Failed to get Vulkan extensions count");
+    }
+
+    std::vector<const char*> extensions(count);
+
+    // 3. 获取扩展名称
+    if (!SDL_Vulkan_GetInstanceExtensions(m_window, &count, extensions.data())) {
+        throw std::runtime_error("Failed to get Vulkan extensions names");
+    }
+
+    // [Senior Tip] 如果是 Debug 模式，手动追加 Debug Utils 扩展
+    #ifdef _DEBUG
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    #endif
+    
+    return extensions;
 }
