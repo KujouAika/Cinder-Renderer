@@ -46,10 +46,5 @@ std::vector<const char*> Window::getVulkanExtensions() const
         throw std::runtime_error("Failed to get Vulkan extensions names");
     }
 
-    // [Senior Tip] 如果是 Debug 模式，手动追加 Debug Utils 扩展
-    #ifdef _DEBUG
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    #endif
-    
     return extensions;
 }

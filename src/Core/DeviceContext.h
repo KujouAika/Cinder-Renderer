@@ -19,8 +19,7 @@ private:
     void pickPhysicalDevice();   // 步骤 3
     void createLogicalDevice();  // 步骤 4
 
-    // 评分机制：给显卡打分
-    int rateDeviceSuitability(VkPhysicalDevice device);
+	bool checkValidationLayerSupport();
 
     // Vulkan 句柄
     VkInstance m_instance = VK_NULL_HANDLE;
