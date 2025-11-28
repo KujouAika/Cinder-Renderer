@@ -1,11 +1,11 @@
-#include "Application.h"
+ï»¿#include "Application.h"
 #include <SDL2/SDL.h>
-#include <stdexcept> // ÓÃÓÚÅ×³öÒì³£
+#include <stdexcept> // ç”¨äºæŠ›å‡ºå¼‚å¸¸
 #include <iostream>
 
 Application::Application() {
-    // 1. ³õÊ¼»¯ SDL ÊÓÆµ×ÓÏµÍ³
-    // SDL_INIT_VIDEO »á×Ô¶¯³õÊ¼»¯ Events ×ÓÏµÍ³
+    // 1. åˆå§‹åŒ– SDL è§†é¢‘å­ç³»ç»Ÿ
+    // SDL_INIT_VIDEO ä¼šè‡ªåŠ¨åˆå§‹åŒ– Events å­ç³»ç»Ÿ
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         throw std::runtime_error("Failed to initialize SDL: " + std::string(SDL_GetError()));
     }
@@ -15,7 +15,7 @@ Application::Application() {
 }
 
 Application::~Application() {
-    // È·±£ Window ºÍ Context ÏÈ±»Ïú»Ù (ÖÇÄÜÖ¸Õë»á×Ô¶¯´¦Àí£¬µ«Âß¼­ÉÏÒª×¢Òâ)
+    // ç¡®ä¿ Window å’Œ Context å…ˆè¢«é”€æ¯ (æ™ºèƒ½æŒ‡é’ˆä¼šè‡ªåŠ¨å¤„ç†ï¼Œä½†é€»è¾‘ä¸Šè¦æ³¨æ„)
     m_window.reset();
     m_context.reset();
 
@@ -28,13 +28,13 @@ void Application::run() {
     SDL_Event event;
 
     while (isRunning) {
-        // ´¦Àí SDL ÊÂ¼ş¶ÓÁĞ (±ÈÈçµã»÷¹Ø±Õ°´Å¥)
+        // å¤„ç† SDL äº‹ä»¶é˜Ÿåˆ— (æ¯”å¦‚ç‚¹å‡»å…³é—­æŒ‰é’®)
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 isRunning = false;
             }
         }
 
-        // ÕâÀïÒÔºó»áµ÷ÓÃ m_context->draw();
+        // è¿™é‡Œä»¥åä¼šè°ƒç”¨ m_context->draw();
     }
 }

@@ -1,0 +1,8 @@
+﻿root = true
+
+# 匹配所有文件
+[*]
+# 强制使用 UTF-8 带签名 (BOM)
+charset = utf-8-bom
+indent_style = space
+indent_size = 4

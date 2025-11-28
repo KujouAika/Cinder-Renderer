@@ -1,22 +1,22 @@
-#include "Core/Window.h"
+ï»¿#include "Core/Window.h"
 #include <stdexcept>
 #include <vulkan/vulkan.h>
 
 Window::Window(const std::string& title, int width, int height)
     : m_width(width), m_height(height) {
 
-    // ÉèÖÃ´°¿Ú±êÖ¾
-    // SDL_WINDOW_VULKAN: ¸æËß SDL ÎÒÃÇÒªÓÃ Vulkan äÖÈ¾£¬²»Òª´´½¨ OpenGL ÉÏÏÂÎÄ
-    // SDL_WINDOW_RESIZABLE: ÔÊĞíÓÃ»§ÍÏ×§¸Ä±ä´°¿Ú´óĞ¡
+    // è®¾ç½®çª—å£æ ‡å¿—
+    // SDL_WINDOW_VULKAN: å‘Šè¯‰ SDL æˆ‘ä»¬è¦ç”¨ Vulkan æ¸²æŸ“ï¼Œä¸è¦åˆ›å»º OpenGL ä¸Šä¸‹æ–‡
+    // SDL_WINDOW_RESIZABLE: å…è®¸ç”¨æˆ·æ‹–æ‹½æ”¹å˜çª—å£å¤§å°
     uint32_t flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
 
     m_window = SDL_CreateWindow(
-        title.c_str(),          // ±êÌâ
-        SDL_WINDOWPOS_CENTERED, // X Î»ÖÃ (¾ÓÖĞ)
-        SDL_WINDOWPOS_CENTERED, // Y Î»ÖÃ (¾ÓÖĞ)
-        width,                  // ¿í
-        height,                 // ¸ß
-        flags                   // ±êÖ¾Î»
+        title.c_str(),          // æ ‡é¢˜
+        SDL_WINDOWPOS_CENTERED, // X ä½ç½® (å±…ä¸­)
+        SDL_WINDOWPOS_CENTERED, // Y ä½ç½® (å±…ä¸­)
+        width,                  // å®½
+        height,                 // é«˜
+        flags                   // æ ‡å¿—ä½
     );
 
     if (!m_window) {
@@ -34,14 +34,14 @@ std::vector<const char*> Window::getVulkanExtensions() const
 {
     unsigned int count = 0;
 
-    // ²ÎÊıËµÃ÷£º´°¿Ú¾ä±ú, ÊıÁ¿Ö¸Õë, Ãû³ÆÊı×é(´«nullptr±íÊ¾Ö»²éÊıÁ¿)
+    // å‚æ•°è¯´æ˜ï¼šçª—å£å¥æŸ„, æ•°é‡æŒ‡é’ˆ, åç§°æ•°ç»„(ä¼ nullptrè¡¨ç¤ºåªæŸ¥æ•°é‡)
     if (!SDL_Vulkan_GetInstanceExtensions(m_window, &count, nullptr)) {
         throw std::runtime_error("Failed to get Vulkan extensions count");
     }
 
     std::vector<const char*> extensions(count);
 
-    // 3. »ñÈ¡À©Õ¹Ãû³Æ
+    // 3. è·å–æ‰©å±•åç§°
     if (!SDL_Vulkan_GetInstanceExtensions(m_window, &count, extensions.data())) {
         throw std::runtime_error("Failed to get Vulkan extensions names");
     }

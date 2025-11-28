@@ -1,32 +1,32 @@
-// src/Core/DeviceContext.h
+ï»¿// src/Core/DeviceContext.h
 #pragma once
 #include <vulkan/vulkan.h>
 #include <vector>
-#include "Window.h" // ĞèÒªÖªµÀ´°¿ÚĞÅÏ¢
+#include "Window.h" // éœ€è¦çŸ¥é“çª—å£ä¿¡æ¯
 
 class DeviceContext {
 public:
-    // ³õÊ¼»¯ĞèÒª´°¿Ú£¬ÒòÎª Surface µÄ´´½¨ÒÀÀµ´°¿Ú
+    // åˆå§‹åŒ–éœ€è¦çª—å£ï¼Œå› ä¸º Surface çš„åˆ›å»ºä¾èµ–çª—å£
     DeviceContext(Window& window);
     ~DeviceContext();
 
     VkDevice getLogicalDevice() const { return m_device; }
-    // ... ÆäËû getter
+    // ... å…¶ä»– getter
 
 private:
-    void createInstance();       // ²½Öè 1
-    void setupDebugMessenger();  // ²½Öè 2 (Debug)
-    void pickPhysicalDevice();   // ²½Öè 3
-    void createLogicalDevice();  // ²½Öè 4
+    void createInstance();       // æ­¥éª¤ 1
+    void setupDebugMessenger();  // æ­¥éª¤ 2 (Debug)
+    void pickPhysicalDevice();   // æ­¥éª¤ 3
+    void createLogicalDevice();  // æ­¥éª¤ 4
 
 	bool checkValidationLayerSupport();
 
-    // Vulkan ¾ä±ú
+    // Vulkan å¥æŸ„
     VkInstance m_instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE; // ÑéÖ¤²ã
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE; // ÎïÀíÉè±¸£¨²»ĞèÒª Destroy£©
-    VkDevice m_device = VK_NULL_HANDLE; // Âß¼­Éè±¸
+    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE; // éªŒè¯å±‚
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE; // ç‰©ç†è®¾å¤‡ï¼ˆä¸éœ€è¦ Destroyï¼‰
+    VkDevice m_device = VK_NULL_HANDLE; // é€»è¾‘è®¾å¤‡
 
-    // ÒıÓÃ´°¿Ú
+    // å¼•ç”¨çª—å£
     Window& m_windowRef;
 };

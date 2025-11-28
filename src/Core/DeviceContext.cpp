@@ -1,11 +1,11 @@
-#include "Core/DeviceContext.h"
+ï»¿#include "Core/DeviceContext.h"
 #include <stdexcept>
 #include <iostream>
 #include <map>
 #include <set>
 #include <optional>
 
-namespace { // <--- ÄäÃûÃüÃû¿Õ¼ä£¬Ïàµ±ÓÚ C ÓïÑÔµÄ static È«¾Ö±äÁ¿£¬Ö»ÔÚµ±Ç°ÎÄ¼ş¿É¼û
+namespace { // <--- åŒ¿åå‘½åç©ºé—´ï¼Œç›¸å½“äº C è¯­è¨€çš„ static å…¨å±€å˜é‡ï¼Œåªåœ¨å½“å‰æ–‡ä»¶å¯è§
 #ifdef NDEBUG
     const bool enableValidationLayers = false;
 #else
@@ -20,7 +20,7 @@ namespace { // <--- ÄäÃûÃüÃû¿Õ¼ä£¬Ïàµ±ÓÚ C ÓïÑÔµÄ static È«¾Ö±äÁ¿£¬Ö»ÔÚµ±Ç°ÎÄ¼ş¿
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
-    // 1. ´úÀíº¯Êı (Proxy Functions)
+    // 1. ä»£ç†å‡½æ•° (Proxy Functions)
     VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
         if (func != nullptr) {
@@ -38,7 +38,7 @@ namespace { // <--- ÄäÃûÃüÃû¿Õ¼ä£¬Ïàµ±ÓÚ C ÓïÑÔµÄ static È«¾Ö±äÁ¿£¬Ö»ÔÚµ±Ç°ÎÄ¼ş¿
         }
     }
 
-    // 2. µ÷ÊÔ»Øµ÷º¯Êı
+    // 2. è°ƒè¯•å›è°ƒå‡½æ•°
     VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -76,27 +76,27 @@ namespace { // <--- ÄäÃûÃüÃû¿Õ¼ä£¬Ïàµ±ÓÚ C ÓïÑÔµÄ static È«¾Ö±äÁ¿£¬Ö»ÔÚµ±Ç°ÎÄ¼ş¿
 
     int rateDeviceSuitability(VkPhysicalDevice device)
     {
-        // 1. ÊôĞÔ (Ãû×Ö¡¢ÀàĞÍ¡¢°æ±¾)
+        // 1. å±æ€§ (åå­—ã€ç±»å‹ã€ç‰ˆæœ¬)
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
-        // 2. ÌØĞÔ (¼¸ºÎ×ÅÉ«Æ÷¡¢Ï¸·ÖÇúÃæµÈ)
+        // 2. ç‰¹æ€§ (å‡ ä½•ç€è‰²å™¨ã€ç»†åˆ†æ›²é¢ç­‰)
         VkPhysicalDeviceFeatures deviceFeatures;
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
         int score = 0;
-        // A. ¸÷ÏòÒìĞÔ¹ıÂË
+        // A. å„å‘å¼‚æ€§è¿‡æ»¤
         if (!deviceFeatures.samplerAnisotropy) return 0;
 
-        // B. ¼¸ºÎ×ÅÉ«Æ÷
+        // B. å‡ ä½•ç€è‰²å™¨
         if (!deviceFeatures.geometryShader) return 0;
 
-        // 1. ¶ÀÏÔ (Discrete GPU) 
+        // 1. ç‹¬æ˜¾ (Discrete GPU) 
         if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
             score += 1000;
         }
 
-        // 2. ×î´óÎÆÀí³ß´ç
+        // 2. æœ€å¤§çº¹ç†å°ºå¯¸
         score += deviceProperties.limits.maxImageDimension2D;
 
         std::cout << "Detected GPU: " << deviceProperties.deviceName
@@ -169,7 +169,7 @@ bool DeviceContext::checkValidationLayerSupport() {
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    // ÊÇ·ñ¿ÉÓÃ
+    // æ˜¯å¦å¯ç”¨
     for (const char* layerName : validationLayers) {
         bool layerFound = false;
 
@@ -193,7 +193,7 @@ void DeviceContext::setupDebugMessenger()
     if (!enableValidationLayers) return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-    // ¸´ÓÃÌî³äÂß¼­
+    // å¤ç”¨å¡«å……é€»è¾‘
     populateDebugMessengerCreateInfo(createInfo);
 
     if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
@@ -221,11 +221,11 @@ void DeviceContext::pickPhysicalDevice()
         candidates.insert(std::make_pair(score, device));
     }
 
-    // rbegin() ÊÇ×îºóÒ»¸öÔªËØ£¨·ÖÊı×î¸ßµÄ£©£¬ÇÒ·ÖÊı±ØĞë´óÓÚ 0
+    // rbegin() æ˜¯æœ€åä¸€ä¸ªå…ƒç´ ï¼ˆåˆ†æ•°æœ€é«˜çš„ï¼‰ï¼Œä¸”åˆ†æ•°å¿…é¡»å¤§äº 0
     if (candidates.rbegin()->first > 0) {
         m_physicalDevice = candidates.rbegin()->second;
         
-        // ´òÓ¡×îÖÕÑ¡Ôñ
+        // æ‰“å°æœ€ç»ˆé€‰æ‹©
         VkPhysicalDeviceProperties props;
         vkGetPhysicalDeviceProperties(m_physicalDevice, &props);
         std::cout << ">>> SELECTED GPU: " << props.deviceName << " <<<" << std::endl;

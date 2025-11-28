@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
 #include <string>
@@ -9,14 +9,14 @@ public:
     Window(const std::string& title, int width, int height);
     ~Window();
 
-    // ½ûÖ¹¿½±´£¬·ÀÖ¹´°¿Ú¾ä±ú±»ÒâÍâ¸´ÖÆ
+    // ç¦æ­¢æ‹·è´ï¼Œé˜²æ­¢çª—å£å¥æŸ„è¢«æ„å¤–å¤åˆ¶
     Window(const Window&) = delete;
     Window& operator=(const Window&) = delete;
 
-    // »ñÈ¡ SDL ´°¿ÚÔ­Ê¼Ö¸Õë£¨´«¸ø Vulkan ÓÃ£©
+    // è·å– SDL çª—å£åŸå§‹æŒ‡é’ˆï¼ˆä¼ ç»™ Vulkan ç”¨ï¼‰
     SDL_Window* getNativeWindow() const { return m_window; }
 
-    // »ñÈ¡´°¿ÚÀ©Õ¹£¨Vulkan ´´½¨ Instance ĞèÒªÖªµÀËüÒªÔÚÕâ¸ö´°¿ÚÉÏ»­»­£©
+    // è·å–çª—å£æ‰©å±•ï¼ˆVulkan åˆ›å»º Instance éœ€è¦çŸ¥é“å®ƒè¦åœ¨è¿™ä¸ªçª—å£ä¸Šç”»ç”»ï¼‰
     std::vector<const char*> getVulkanExtensions() const;
 
 private:
