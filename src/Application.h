@@ -1,10 +1,10 @@
-﻿// src/Application.h
-#pragma once
+﻿#pragma once
 #include "Core/Window.h"
 #include "Core/DeviceContext.h"
 #include <memory>
 
-class Application {
+class Application
+{
 public:
     Application();
     ~Application();

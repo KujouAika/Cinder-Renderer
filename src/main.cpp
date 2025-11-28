@@ -1,7 +1,8 @@
 ﻿#include "Application.h"
 #include <iostream>
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     try {
         Application app;
         app.run();

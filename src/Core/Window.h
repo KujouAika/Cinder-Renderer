@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 
-class Window {
+class Window
+{
 public:
     Window(const std::string& title, int width, int height);
     ~Window();

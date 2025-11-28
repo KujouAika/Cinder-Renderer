@@ -12,28 +12,35 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
     const bool enableValidationLayers = true;
 #endif
 
-    const std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
+    const std::vector<const char*> validationLayers =
+    {
+        "VK_LAYER_KHRONOS_validation",
     };
 
-    const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    const std::vector<const char*> deviceExtensions =
+    {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
     // 1. 代理函数 (Proxy Functions)
-    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+    {
         auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-        if (func != nullptr) {
+        if (func != nullptr)
+        {
             return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
         }
-        else {
+        else
+        {
             return VK_ERROR_EXTENSION_NOT_PRESENT;
         }
     }
 
-    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+    {
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-        if (func != nullptr) {
+        if (func != nullptr)
+        {
             func(instance, debugMessenger, pAllocator);
         }
     }
@@ -43,15 +50,18 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData) {
+        void* pUserData)
+    {
 
-        if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        {
             std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
         }
         return VK_FALSE;
     }
 
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+    {
         createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
         createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -64,17 +74,78 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
         createInfo.pfnUserCallback = debugCallback;
     }
 
-    bool isDeviceSuitable(VkPhysicalDevice device) {
-        VkPhysicalDeviceProperties deviceProperties;
-        VkPhysicalDeviceFeatures deviceFeatures;
-        vkGetPhysicalDeviceProperties(device, &deviceProperties);
-        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+    // 1. 结构体定义移到这里
+    struct QueueFamilyIndices
+    {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
 
-        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-            deviceFeatures.geometryShader;
+        bool isComplete()
+        {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
+
+    // 2. 查找队列族 (改为自由函数，传入 surface)
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+    {
+        QueueFamilyIndices indices;
+
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+        int i = 0;
+        for (const auto& queueFamily : queueFamilies)
+        {
+            // 检查是否支持图形指令
+            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            {
+                indices.graphicsFamily = i;
+            }
+
+            // 检查是否支持显示到 Surface (Presentation)
+            // [Senior Note]: 现在的驱动通常 Graphics 和 Present 是同一个队列，
+            // 但早期硬件或特定架构可能是分开的，必须分别检查。
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+            if (presentSupport)
+            {
+                indices.presentFamily = i;
+            }
+
+            if (indices.isComplete())
+            {
+                break;
+            }
+            i++;
+        }
+
+        return indices;
     }
 
-    int rateDeviceSuitability(VkPhysicalDevice device)
+    // 3. 检查扩展 (改为自由函数)
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device)
+    {
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+        std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+        for (const auto& extension : availableExtensions)
+        {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        return requiredExtensions.empty();
+    }
+
+    int rateDeviceSuitability(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
         // 1. 属性 (名字、类型、版本)
         VkPhysicalDeviceProperties deviceProperties;
@@ -85,6 +156,13 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
         int score = 0;
+        // A. 完整的队列族
+        QueueFamilyIndices indices = findQueueFamilies(device, surface);
+        if (!indices.isComplete()) return 0;
+
+        // B. 所需的扩展 (Swapchain)
+        if (!checkDeviceExtensionSupport(device)) return 0;
+
         // A. 各向异性过滤
         if (!deviceFeatures.samplerAnisotropy) return 0;
 
@@ -92,7 +170,8 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
         if (!deviceFeatures.geometryShader) return 0;
 
         // 1. 独显 (Discrete GPU) 
-        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        {
             score += 1000;
         }
 
@@ -106,15 +185,19 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
     }
 }
 
-DeviceContext::DeviceContext(Window& window) : m_windowRef(window) {
+DeviceContext::DeviceContext(Window& window) : m_windowRef(window)
+{
     createInstance();
-	setupDebugMessenger();
+    setupDebugMessenger();
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
 }
 
-DeviceContext::~DeviceContext() {
-    if (enableValidationLayers) {
+DeviceContext::~DeviceContext()
+{
+    if (enableValidationLayers)
+    {
         DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
     }
 
@@ -139,7 +222,8 @@ void DeviceContext::createInstance()
     extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers) {
+    if (enableValidationLayers)
+    {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -147,7 +231,8 @@ void DeviceContext::createInstance()
         populateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
-    else {
+    else
+    {
         createInfo.enabledLayerCount = 0;
         createInfo.pNext = nullptr;
     }
@@ -156,13 +241,15 @@ void DeviceContext::createInstance()
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     std::cout << "Creating Vulkan Instance..." << std::endl;
-    if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
+    if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to create instance!");
     }
     std::cout << "Vulkan Instance created successfully!" << std::endl;
 }
 
-bool DeviceContext::checkValidationLayerSupport() {
+bool DeviceContext::checkValidationLayerSupport()
+{
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -170,17 +257,21 @@ bool DeviceContext::checkValidationLayerSupport() {
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
     // 是否可用
-    for (const char* layerName : validationLayers) {
+    for (const char* layerName : validationLayers)
+    {
         bool layerFound = false;
 
-        for (const auto& layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
+        for (const auto& layerProperties : availableLayers)
+        {
+            if (strcmp(layerName, layerProperties.layerName) == 0)
+            {
                 layerFound = true;
                 break;
             }
         }
 
-        if (!layerFound) {
+        if (!layerFound)
+        {
             return false;
         }
     }
@@ -196,8 +287,18 @@ void DeviceContext::setupDebugMessenger()
     // 复用填充逻辑
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
+    if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to set up debug messenger!");
+    }
+}
+
+void DeviceContext::createSurface()
+{
+    // SDL_Vulkan_CreateSurface 需要 SDL_Window* 指针
+    if (!SDL_Vulkan_CreateSurface(m_windowRef.getNativeWindow(), m_instance, &m_surface))
+    {
+        throw std::runtime_error("failed to create window surface!");
     }
 }
 
@@ -206,30 +307,34 @@ void DeviceContext::pickPhysicalDevice()
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
 
-    if (deviceCount == 0) {
+    if (deviceCount == 0)
+    {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
-    // Use an ordered map to automatically sort candidates by increasing score
     std::multimap<int, VkPhysicalDevice> candidates;
 
-    for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device);
+    for (const auto& device : devices)
+    {
+        int score = rateDeviceSuitability(device, m_surface);
         candidates.insert(std::make_pair(score, device));
     }
 
     // rbegin() 是最后一个元素（分数最高的），且分数必须大于 0
-    if (candidates.rbegin()->first > 0) {
+    if (candidates.rbegin()->first > 0)
+    {
         m_physicalDevice = candidates.rbegin()->second;
-        
+
         // 打印最终选择
         VkPhysicalDeviceProperties props;
         vkGetPhysicalDeviceProperties(m_physicalDevice, &props);
         std::cout << ">>> SELECTED GPU: " << props.deviceName << " <<<" << std::endl;
-    } else {
+    }
+    else
+    {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
 }
