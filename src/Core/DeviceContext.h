@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <vulkan/vulkan.h>
 #include <vector>
+#include "DeviceSelector.h"
 #include "Window.h" // 需要知道窗口信息
 
 class FDeviceContext
@@ -30,6 +31,7 @@ private:
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE; // 物理设备（不需要 Destroy）
     VkDevice LogicalDevice = VK_NULL_HANDLE; // 逻辑设备
 
+    FQueueFamilyIndices QueueIndices;
     VkQueue GraphicsQueue = VK_NULL_HANDLE;
     VkQueue PresentQueue = VK_NULL_HANDLE;
     VkQueue ComputeQueue = VK_NULL_HANDLE;

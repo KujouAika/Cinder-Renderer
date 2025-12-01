@@ -45,13 +45,12 @@ add_executable(${PROJECT_NAME} src/main.cpp)
 target_sources(${PROJECT_NAME} PRIVATE
     src/Core/Window.h
     src/Core/Window.cpp
-    src/Core/DeviceContext.h
-    src/Core/DeviceContext.cpp
-)
-
-target_sources(${PROJECT_NAME} PRIVATE
     src/Application.h
     src/Application.cpp
+    src/Core/DeviceContext.h
+    src/Core/DeviceContext.cpp
+    src/Core/DeviceSelector.h
+    src/Core/DeviceSelector.cpp
 )
 
 
@@ -80,6 +79,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES
     src/Core/Window.h
     src/Core/Window.cpp
+    src/Core/DeviceSelector.h
+    src/Core/DeviceSelector.cpp
     src/Core/DeviceContext.h
     src/Core/DeviceContext.cpp
     src/Application.h
