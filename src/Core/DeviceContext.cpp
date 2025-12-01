@@ -182,6 +182,7 @@ void FDeviceContext::PickPhysicalDevice()
     std::cout << "Selected GPU: " << Props.deviceName << std::endl;
 
     std::cout << "Graphics Family Index: " << QueueIndices.GraphicsFamily.value() << std::endl;
+    std::cout << "Present Family Index: " << QueueIndices.PresentFamily.value() << std::endl;
     std::cout << "Compute Family Index:  " << QueueIndices.ComputeFamily.value() << std::endl;
 
     if (QueueIndices.GraphicsFamily.value() != QueueIndices.ComputeFamily.value())
