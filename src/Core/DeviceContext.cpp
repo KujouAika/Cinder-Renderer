@@ -86,6 +86,12 @@ FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj)
 
 FDeviceContext::~FDeviceContext()
 {
+    if (LogicalDevice != VK_NULL_HANDLE)
+    {
+        vkDestroyDevice(LogicalDevice, nullptr);
+        LogicalDevice = VK_NULL_HANDLE;
+    }
+
     if (Surface != VK_NULL_HANDLE) {
         vkDestroySurfaceKHR(Instance, Surface, nullptr);
     }
@@ -174,14 +180,71 @@ void FDeviceContext::PickPhysicalDevice()
     VkPhysicalDeviceProperties Props;
     vkGetPhysicalDeviceProperties(PhysicalDevice, &Props);
     std::cout << "Selected GPU: " << Props.deviceName << std::endl;
+
+    std::cout << "Graphics Family Index: " << QueueIndices.GraphicsFamily.value() << std::endl;
+    std::cout << "Compute Family Index:  " << QueueIndices.ComputeFamily.value() << std::endl;
+
+    if (QueueIndices.GraphicsFamily.value() != QueueIndices.ComputeFamily.value())
+    {
+        std::cout << ">> Dedicated Async Compute Queue Found! (True Async)" << std::endl;
+    }
+    else
+    {
+        std::cout << ">> Shared Graphics/Compute Queue. (Fallback)" << std::endl;
+    }
 }
 
 void FDeviceContext::CreateLogicalDevice()
 {
     std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
+    float QueuePriority = 1.0f;
     std::set<uint32_t> UniqueQueueFamilies =
     {
         QueueIndices.GraphicsFamily.value(),
-        QueueIndices.PresentFamily.value()
+        QueueIndices.PresentFamily.value(),
+        QueueIndices.ComputeFamily.value()
     };
+
+    for (uint32_t QueueFamily : UniqueQueueFamilies)
+    {
+        VkDeviceQueueCreateInfo QueueCreateInfo{};
+        QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        QueueCreateInfo.queueFamilyIndex = QueueFamily;
+        QueueCreateInfo.queueCount = 1; // 每个族我们只需要 1 个队列句柄
+        QueueCreateInfo.pQueuePriorities = &QueuePriority;
+
+        QueueCreateInfos.push_back(QueueCreateInfo);
+    }
+
+    VkPhysicalDeviceFeatures DeviceFeatures{};
+    DeviceFeatures.samplerAnisotropy = VK_TRUE;
+    DeviceFeatures.geometryShader = VK_TRUE;
+
+    VkDeviceCreateInfo CreateInfo{};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
+    CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
+    CreateInfo.pEnabledFeatures = &DeviceFeatures;
+
+    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
+    CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
+
+    if (bEnableValidationLayers)
+    {
+        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+        CreateInfo.ppEnabledLayerNames = ValidationLayers.data();
+    }
+    else
+    {
+        CreateInfo.enabledLayerCount = 0;
+    }
+
+    if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create logical device!");
+    }
+
+    vkGetDeviceQueue(LogicalDevice, QueueIndices.GraphicsFamily.value(), 0, &GraphicsQueue);
+    vkGetDeviceQueue(LogicalDevice, QueueIndices.PresentFamily.value(), 0, &PresentQueue);
+    vkGetDeviceQueue(LogicalDevice, QueueIndices.ComputeFamily.value(), 0, &ComputeQueue);
 }

@@ -64,29 +64,47 @@ FQueueFamilyIndices FDeviceSelector::FindQueueFamilies(VkPhysicalDevice InDevice
     vkGetPhysicalDeviceQueueFamilyProperties(InDevice, &QueueFamilyCount, QueueFamilies.data());
 
     int i = 0;
-    for (const auto& QueueFamily : QueueFamilies)
+    for (int i = 0; i < QueueFamilies.size(); i++)
     {
-        // 检查是否支持图形指令
+        const auto& QueueFamily = QueueFamilies[i];
+
         if (QueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             Indices.GraphicsFamily = i;
         }
 
-        // 检查是否支持显示到 Surface (Presentation)
-        // [Senior Note]: 现在的驱动通常 Graphics 和 Present 是同一个队列，
-        // 但早期硬件或特定架构可能是分开的，必须分别检查。
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(InDevice, i, InSurface, &presentSupport);
-        if (presentSupport)
+        VkBool32 bPresentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(InDevice, i, InSurface, &bPresentSupport);
+        if (bPresentSupport)
         {
             Indices.PresentFamily = i;
         }
+    }
 
-        if (Indices.IsComplete())
+    // 计算专用
+    for (int i = 0; i < QueueFamilies.size(); i++)
+    {
+        const auto& QueueFamily = QueueFamilies[i];
+        if ((QueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT) &&
+            !(QueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT))
         {
+            Indices.ComputeFamily = i;
             break;
         }
-        i++;
+    }
+
+    // 回退通用
+    if (!Indices.ComputeFamily.has_value())
+    {
+        for (int i = 0; i < QueueFamilies.size(); i++)
+        {
+            const auto& QueueFamily = QueueFamilies[i];
+            if (QueueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)
+            {
+                Indices.ComputeFamily = i;
+                break;
+            }
+        }
     }
 
     return Indices;

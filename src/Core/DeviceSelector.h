@@ -15,12 +15,14 @@ struct FQueueFamilyIndices
     }
 };
 
+
 struct FSelectionResult
 {
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
     FQueueFamilyIndices Indices;
     int Score = 0;
 };
+
 
 class FDeviceSelector
 {
