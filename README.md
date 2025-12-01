@@ -17,6 +17,7 @@ This project serves as a research testbed for implementing modern AAA rendering 
 * **Core API:** Vulkan 1.3 (SDL2, GLM, Dynamic Rendering, Synchronization 2)
 * **Language:** C++ 20 (Smart Pointers, Concepts, Modules structure)
 * **Build System:** CMake(3.25+)
+* **Memory Management:** Vulkan Memory Allocator (VMA)
 
 
 ## ✨ Key Features

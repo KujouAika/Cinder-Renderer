@@ -3,6 +3,7 @@
 #include <vector>
 #include "DeviceSelector.h"
 #include "Window.h" // 需要知道窗口信息
+#include "vk_mem_alloc.h"
 
 class FDeviceContext
 {
@@ -11,8 +12,11 @@ public:
     FDeviceContext(FWindow& WindowObj);
     ~FDeviceContext();
 
+    VkPhysicalDevice GetPhysicalDevice() const { return PhysicalDevice; }
     VkDevice GetLogicalDevice() const { return LogicalDevice; }
     
+    VmaAllocator GetAllocator() const { return Allocator; }
+
     VkQueue GetGraphicsQueue() const { return GraphicsQueue; }
     VkQueue GetPresentQueue() const { return PresentQueue; }
     VkQueue GetComputeQueue() const { return ComputeQueue; }
@@ -24,12 +28,16 @@ private:
     void PickPhysicalDevice();   // 步骤 3
     void CreateLogicalDevice();  // 步骤 4
 
+    void CreateAllocator();
+
     // Vulkan 句柄
     VkInstance Instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE; // 验证层
     VkSurfaceKHR Surface = VK_NULL_HANDLE;
     VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE; // 物理设备（不需要 Destroy）
     VkDevice LogicalDevice = VK_NULL_HANDLE; // 逻辑设备
+
+    VmaAllocator Allocator = VK_NULL_HANDLE;
 
     FQueueFamilyIndices QueueIndices;
     VkQueue GraphicsQueue = VK_NULL_HANDLE;

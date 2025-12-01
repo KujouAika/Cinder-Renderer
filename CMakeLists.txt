@@ -56,6 +56,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     src
+    src/ThirdParty/VMA
     "${VULKAN_SDK_PATH}/Include"
 )
 

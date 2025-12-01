@@ -1,4 +1,7 @@
-﻿#include "Core/DeviceContext.h"
+﻿#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
+#include "Core/DeviceContext.h"
 #include "Core/DeviceSelector.h"
 #include <stdexcept>
 #include <iostream>
@@ -82,10 +85,23 @@ FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj)
     CreateSurface();
     PickPhysicalDevice();
     CreateLogicalDevice();
+
+    CreateAllocator();
 }
 
 FDeviceContext::~FDeviceContext()
 {
+    if (LogicalDevice != VK_NULL_HANDLE)
+    {
+        vkDeviceWaitIdle(LogicalDevice);
+    }
+
+    if (Allocator != VK_NULL_HANDLE)
+    {
+        vmaDestroyAllocator(Allocator);
+        Allocator = VK_NULL_HANDLE;
+    }
+
     if (LogicalDevice != VK_NULL_HANDLE)
     {
         vkDestroyDevice(LogicalDevice, nullptr);
@@ -248,4 +264,23 @@ void FDeviceContext::CreateLogicalDevice()
     vkGetDeviceQueue(LogicalDevice, QueueIndices.GraphicsFamily.value(), 0, &GraphicsQueue);
     vkGetDeviceQueue(LogicalDevice, QueueIndices.PresentFamily.value(), 0, &PresentQueue);
     vkGetDeviceQueue(LogicalDevice, QueueIndices.ComputeFamily.value(), 0, &ComputeQueue);
+}
+
+void FDeviceContext::CreateAllocator()
+{
+    VmaAllocatorCreateInfo AllocatorInfo{};
+
+    AllocatorInfo.physicalDevice = PhysicalDevice;
+    AllocatorInfo.device = LogicalDevice;
+    AllocatorInfo.instance = Instance;
+
+    AllocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    AllocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; // Buffer Device Address (BDA)
+
+    if (vmaCreateAllocator(&AllocatorInfo, &Allocator) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create VMA allocator!");
+    }
+
+    std::cout << "VMA Initialized Successfully." << std::endl;
 }
