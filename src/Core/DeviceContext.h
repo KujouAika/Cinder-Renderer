@@ -3,32 +3,37 @@
 #include <vector>
 #include "Window.h" // 需要知道窗口信息
 
-class DeviceContext
+class FDeviceContext
 {
 public:
     // 初始化需要窗口，因为 Surface 的创建依赖窗口
-    DeviceContext(Window& window);
-    ~DeviceContext();
+    FDeviceContext(FWindow& WindowObj);
+    ~FDeviceContext();
 
-    VkDevice getLogicalDevice() const { return m_device; }
-    // ... 其他 getter
+    VkDevice GetLogicalDevice() const { return LogicalDevice; }
+    
+    VkQueue GetGraphicsQueue() const { return GraphicsQueue; }
+    VkQueue GetPresentQueue() const { return PresentQueue; }
+    VkQueue GetComputeQueue() const { return ComputeQueue; }
 
 private:
-    void createInstance();       // 步骤 1
-    void setupDebugMessenger();  // 步骤 2 (Debug)
-    void createSurface();
-    void pickPhysicalDevice();   // 步骤 3
-    void createLogicalDevice();  // 步骤 4
-
-	bool checkValidationLayerSupport();
+    void CreateInstance();       // 步骤 1
+    void SetupDebugMessenger();  // 步骤 2 (Debug)
+    void CreateSurface();
+    void PickPhysicalDevice();   // 步骤 3
+    void CreateLogicalDevice();  // 步骤 4
 
     // Vulkan 句柄
-    VkInstance m_instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE; // 验证层
-    VkSurfaceKHR m_surface = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE; // 物理设备（不需要 Destroy）
-    VkDevice m_device = VK_NULL_HANDLE; // 逻辑设备
+    VkInstance Instance = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE; // 验证层
+    VkSurfaceKHR Surface = VK_NULL_HANDLE;
+    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE; // 物理设备（不需要 Destroy）
+    VkDevice LogicalDevice = VK_NULL_HANDLE; // 逻辑设备
+
+    VkQueue GraphicsQueue = VK_NULL_HANDLE;
+    VkQueue PresentQueue = VK_NULL_HANDLE;
+    VkQueue ComputeQueue = VK_NULL_HANDLE;
 
     // 引用窗口
-    Window& m_windowRef;
+    FWindow& WindowRef;
 };

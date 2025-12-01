@@ -4,8 +4,8 @@
 int main(int argc, char* argv[])
 {
     try {
-        Application app;
-        app.run();
+        FApplication App;
+        App.Run();
     }
     catch (const std::exception& e) {
         std::cerr << "Critical Error: " << e.what() << std::endl;

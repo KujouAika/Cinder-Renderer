@@ -3,7 +3,7 @@
 #include <stdexcept> // 用于抛出异常
 #include <iostream>
 
-Application::Application()
+FApplication::FApplication()
 {
     // 1. 初始化 SDL 视频子系统
     // SDL_INIT_VIDEO 会自动初始化 Events 子系统
@@ -12,34 +12,32 @@ Application::Application()
         throw std::runtime_error("Failed to initialize SDL: " + std::string(SDL_GetError()));
     }
 
-    m_window = std::make_unique<Window>("Vulkan Renderer", 800, 600);
-    m_context = std::make_unique<DeviceContext>(*m_window);
+    AppWindow = std::make_unique<FWindow>("Vulkan Renderer", 800, 600);
+    Context = std::make_unique<FDeviceContext>(*AppWindow);
 }
 
-Application::~Application()
+FApplication::~FApplication()
 {
     // 确保 Window 和 Context 先被销毁 (智能指针会自动处理，但逻辑上要注意)
-    m_window.reset();
-    m_context.reset();
+    AppWindow.reset();
+    Context.reset();
 
     SDL_Quit();
     std::cout << "SDL Shutdown successfully." << std::endl;
 }
 
-void Application::run()
+void FApplication::Run()
 {
-    bool isRunning = true;
+    bool bIsRunning = true;
     SDL_Event event;
 
-    while (isRunning)
+    while (bIsRunning)
     {
         // 处理 SDL 事件队列 (比如点击关闭按钮)
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
-                isRunning = false;
+                bIsRunning = false;
             }
         }
-
-        // 这里以后会调用 m_context->draw();
     }
 }

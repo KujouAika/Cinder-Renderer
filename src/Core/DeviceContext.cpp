@@ -5,30 +5,30 @@
 #include <set>
 #include <optional>
 
-namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变量，只在当前文件可见
+namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，只在当前文件可见
 #ifdef NDEBUG
-    const bool enableValidationLayers = false;
+    const bool bEnableValidationLayers = false;
 #else
-    const bool enableValidationLayers = true;
+    const bool bEnableValidationLayers = true;
 #endif
 
-    const std::vector<const char*> validationLayers =
+    const std::vector<const char*> ValidationLayers =
     {
         "VK_LAYER_KHRONOS_validation",
     };
 
-    const std::vector<const char*> deviceExtensions =
+    const std::vector<const char*> DeviceExtensions =
     {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     };
 
     // 1. 代理函数 (Proxy Functions)
-    VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+    VkResult CreateDebugUtilsMessengerEXT(VkInstance Ininstance, const VkDebugUtilsMessengerCreateInfoEXT* InCreateInfo, const VkAllocationCallbacks* InAllocator, VkDebugUtilsMessengerEXT* InDebugMessenger)
     {
-        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(Ininstance, "vkCreateDebugUtilsMessengerEXT");
         if (func != nullptr)
         {
-            return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+            return func(Ininstance, InCreateInfo, InAllocator, InDebugMessenger);
         }
         else
         {
@@ -36,302 +36,275 @@ namespace { // <--- 匿名命名空间，相当于 C 语言的 static 全局变�
         }
     }
 
-    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+    void DestroyDebugUtilsMessengerEXT(VkInstance InInstance, VkDebugUtilsMessengerEXT InDebugMessenger, const VkAllocationCallbacks* InAllocator)
     {
-        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(InInstance, "vkDestroyDebugUtilsMessengerEXT");
         if (func != nullptr)
         {
-            func(instance, debugMessenger, pAllocator);
+            func(InInstance, InDebugMessenger, InAllocator);
         }
     }
 
     // 2. 调试回调函数
-    VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT InMessageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT InMessageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* InCallbackData,
         void* pUserData)
     {
 
-        if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+        if (InMessageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         {
-            std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+            std::cerr << "validation layer: " << InCallbackData->pMessage << std::endl;
         }
         return VK_FALSE;
     }
 
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& InCreateInfo)
     {
-        createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+        InCreateInfo = {};
+        InCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        InCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+        InCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-        createInfo.pfnUserCallback = debugCallback;
+        InCreateInfo.pfnUserCallback = DebugCallback;
     }
 
-    // 1. 结构体定义移到这里
+    // 1. 队列族结构体定义
     struct QueueFamilyIndices
     {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
+        std::optional<uint32_t> GraphicsFamily;
+        std::optional<uint32_t> PresentFamily;
 
         bool isComplete()
         {
-            return graphicsFamily.has_value() && presentFamily.has_value();
+            return GraphicsFamily.has_value() && PresentFamily.has_value();
         }
     };
 
-    // 2. 查找队列族 (改为自由函数，传入 surface)
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+    // 2. 查找队列族
+    QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice InDevice, VkSurfaceKHR InSurface)
     {
-        QueueFamilyIndices indices;
+        QueueFamilyIndices Indices;
 
-        uint32_t queueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+        uint32_t QueueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(InDevice, &QueueFamilyCount, nullptr);
 
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+        std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(InDevice, &QueueFamilyCount, QueueFamilies.data());
 
         int i = 0;
-        for (const auto& queueFamily : queueFamilies)
+        for (const auto& QueueFamily : QueueFamilies)
         {
             // 检查是否支持图形指令
-            if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if (QueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
-                indices.graphicsFamily = i;
+                Indices.GraphicsFamily = i;
             }
 
             // 检查是否支持显示到 Surface (Presentation)
             // [Senior Note]: 现在的驱动通常 Graphics 和 Present 是同一个队列，
             // 但早期硬件或特定架构可能是分开的，必须分别检查。
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(InDevice, i, InSurface, &presentSupport);
             if (presentSupport)
             {
-                indices.presentFamily = i;
+                Indices.PresentFamily = i;
             }
 
-            if (indices.isComplete())
+            if (Indices.isComplete())
             {
                 break;
             }
             i++;
         }
 
-        return indices;
+        return Indices;
     }
 
-    // 3. 检查扩展 (改为自由函数)
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device)
+    // 3. 检查扩展
+    bool CheckDeviceExtensionSupport(VkPhysicalDevice InDevice)
     {
-        uint32_t extensionCount;
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+        uint32_t ExtensionCount;
+        vkEnumerateDeviceExtensionProperties(InDevice, nullptr, &ExtensionCount, nullptr);
 
-        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+        std::vector<VkExtensionProperties> AvailableExtensions(ExtensionCount);
+        vkEnumerateDeviceExtensionProperties(InDevice, nullptr, &ExtensionCount, AvailableExtensions.data());
 
-        std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+        std::set<std::string> RequiredExtensions(DeviceExtensions.begin(), DeviceExtensions.end());
 
-        for (const auto& extension : availableExtensions)
+        for (const auto& Extension : AvailableExtensions)
         {
-            requiredExtensions.erase(extension.extensionName);
+            RequiredExtensions.erase(Extension.extensionName);
         }
 
-        return requiredExtensions.empty();
+        return RequiredExtensions.empty();
     }
 
-    int rateDeviceSuitability(VkPhysicalDevice device, VkSurfaceKHR surface)
+    int RateDeviceSuitability(VkPhysicalDevice InDevice, VkSurfaceKHR InSurface)
     {
         // 1. 属性 (名字、类型、版本)
-        VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+        VkPhysicalDeviceProperties DeviceProperties;
+        vkGetPhysicalDeviceProperties(InDevice, &DeviceProperties);
 
         // 2. 特性 (几何着色器、细分曲面等)
-        VkPhysicalDeviceFeatures deviceFeatures;
-        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+        VkPhysicalDeviceFeatures DeviceFeatures;
+        vkGetPhysicalDeviceFeatures(InDevice, &DeviceFeatures);
 
-        int score = 0;
+        int Score = 0;
         // A. 完整的队列族
-        QueueFamilyIndices indices = findQueueFamilies(device, surface);
-        if (!indices.isComplete()) return 0;
+        QueueFamilyIndices Indices = FindQueueFamilies(InDevice, InSurface);
+        if (!Indices.isComplete()) return 0;
 
         // B. 所需的扩展 (Swapchain)
-        if (!checkDeviceExtensionSupport(device)) return 0;
+        if (!CheckDeviceExtensionSupport(InDevice)) return 0;
 
         // A. 各向异性过滤
-        if (!deviceFeatures.samplerAnisotropy) return 0;
+        if (!DeviceFeatures.samplerAnisotropy) return 0;
 
         // B. 几何着色器
-        if (!deviceFeatures.geometryShader) return 0;
+        if (!DeviceFeatures.geometryShader) return 0;
 
         // 1. 独显 (Discrete GPU) 
-        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+        if (DeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         {
-            score += 1000;
+            Score += 1000;
         }
 
         // 2. 最大纹理尺寸
-        score += deviceProperties.limits.maxImageDimension2D;
+        Score += DeviceProperties.limits.maxImageDimension2D;
 
-        std::cout << "Detected GPU: " << deviceProperties.deviceName
-            << " | Score: " << score << std::endl;
+        std::cout << "Detected GPU: " << DeviceProperties.deviceName
+            << " | Score: " << Score << std::endl;
 
-        return score;
+        return Score;
     }
 }
 
-DeviceContext::DeviceContext(Window& window) : m_windowRef(window)
+FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj)
 {
-    createInstance();
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
-    createLogicalDevice();
+    CreateInstance();
+    SetupDebugMessenger();
+    CreateSurface();
+    PickPhysicalDevice();
+    CreateLogicalDevice();
 }
 
-DeviceContext::~DeviceContext()
+FDeviceContext::~FDeviceContext()
 {
-    if (enableValidationLayers)
-    {
-        DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+    if (Surface != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(Instance, Surface, nullptr);
     }
 
-    vkDestroyInstance(m_instance, nullptr);
+    if (bEnableValidationLayers)
+    {
+        DestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
+    }
+
+    vkDestroyInstance(Instance, nullptr);
 }
 
-void DeviceContext::createInstance()
+void FDeviceContext::CreateInstance()
 {
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Vulkan Renderer";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_3;
+    VkApplicationInfo AppInfo{};
+    AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    AppInfo.pApplicationName = "Vulkan Renderer";
+    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+    AppInfo.pEngineName = "No Engine";
+    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+    AppInfo.apiVersion = VK_API_VERSION_1_3;
 
-    VkInstanceCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo = &appInfo;
+    VkInstanceCreateInfo CreateInfo{};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    CreateInfo.pApplicationInfo = &AppInfo;
 
-    auto extensions = m_windowRef.getVulkanExtensions();
-    extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    auto Extensions = WindowRef.GetVulkanExtensions();
+    Extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (enableValidationLayers)
+    VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo{};
+    if (bEnableValidationLayers)
     {
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
+        Extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+        CreateInfo.ppEnabledLayerNames = ValidationLayers.data();
 
-        populateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+        populateDebugMessengerCreateInfo(DebugCreateInfo);
+        CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&DebugCreateInfo;
     }
     else
     {
-        createInfo.enabledLayerCount = 0;
-        createInfo.pNext = nullptr;
+        CreateInfo.enabledLayerCount = 0;
+        CreateInfo.pNext = nullptr;
     }
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
-    createInfo.ppEnabledExtensionNames = extensions.data();
+    CreateInfo.enabledExtensionCount = static_cast<uint32_t>(Extensions.size());
+    CreateInfo.ppEnabledExtensionNames = Extensions.data();
 
     std::cout << "Creating Vulkan Instance..." << std::endl;
-    if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
+    if (vkCreateInstance(&CreateInfo, nullptr, &Instance) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create instance!");
     }
     std::cout << "Vulkan Instance created successfully!" << std::endl;
 }
 
-bool DeviceContext::checkValidationLayerSupport()
+void FDeviceContext::SetupDebugMessenger()
 {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    if (!bEnableValidationLayers) return;
 
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    // 是否可用
-    for (const char* layerName : validationLayers)
-    {
-        bool layerFound = false;
-
-        for (const auto& layerProperties : availableLayers)
-        {
-            if (strcmp(layerName, layerProperties.layerName) == 0)
-            {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-void DeviceContext::setupDebugMessenger()
-{
-    if (!enableValidationLayers) return;
-
-    VkDebugUtilsMessengerCreateInfoEXT createInfo{};
+    VkDebugUtilsMessengerCreateInfoEXT CreateInfo{};
     // 复用填充逻辑
-    populateDebugMessengerCreateInfo(createInfo);
+    populateDebugMessengerCreateInfo(CreateInfo);
 
-    if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS)
+    if (CreateDebugUtilsMessengerEXT(Instance, &CreateInfo, nullptr, &DebugMessenger) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to set up debug messenger!");
     }
 }
 
-void DeviceContext::createSurface()
+void FDeviceContext::CreateSurface()
 {
     // SDL_Vulkan_CreateSurface 需要 SDL_Window* 指针
-    if (!SDL_Vulkan_CreateSurface(m_windowRef.getNativeWindow(), m_instance, &m_surface))
+    if (!SDL_Vulkan_CreateSurface(WindowRef.GetNativeWindow(), Instance, &Surface))
     {
         throw std::runtime_error("failed to create window surface!");
     }
 }
 
-void DeviceContext::pickPhysicalDevice()
+void FDeviceContext::PickPhysicalDevice()
 {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+    uint32_t DeviceCount = 0;
+    vkEnumeratePhysicalDevices(Instance, &DeviceCount, nullptr);
 
-    if (deviceCount == 0)
+    if (DeviceCount == 0)
     {
         throw std::runtime_error("failed to find GPUs with Vulkan support!");
     }
 
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+    std::vector<VkPhysicalDevice> Devices(DeviceCount);
+    vkEnumeratePhysicalDevices(Instance, &DeviceCount, Devices.data());
 
-    std::multimap<int, VkPhysicalDevice> candidates;
+    std::multimap<int, VkPhysicalDevice> Candidates;
 
-    for (const auto& device : devices)
+    for (const auto& Device : Devices)
     {
-        int score = rateDeviceSuitability(device, m_surface);
-        candidates.insert(std::make_pair(score, device));
+        int Score = RateDeviceSuitability(Device, Surface);
+        Candidates.insert(std::make_pair(Score, Device));
     }
 
     // rbegin() 是最后一个元素（分数最高的），且分数必须大于 0
-    if (candidates.rbegin()->first > 0)
+    if (Candidates.rbegin()->first > 0)
     {
-        m_physicalDevice = candidates.rbegin()->second;
+        PhysicalDevice = Candidates.rbegin()->second;
 
         // 打印最终选择
-        VkPhysicalDeviceProperties props;
-        vkGetPhysicalDeviceProperties(m_physicalDevice, &props);
-        std::cout << ">>> SELECTED GPU: " << props.deviceName << " <<<" << std::endl;
+        VkPhysicalDeviceProperties Props;
+        vkGetPhysicalDeviceProperties(PhysicalDevice, &Props);
+        std::cout << ">>> SELECTED GPU: " << Props.deviceName << " <<<" << std::endl;
     }
     else
     {
@@ -339,6 +312,12 @@ void DeviceContext::pickPhysicalDevice()
     }
 }
 
-void DeviceContext::createLogicalDevice()
+void FDeviceContext::CreateLogicalDevice()
 {
+    QueueFamilyIndices Indices = FindQueueFamilies(PhysicalDevice, Surface);
+
+    VkDeviceQueueCreateInfo QueueCreateInfo{};
+    QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    QueueCreateInfo.queueFamilyIndex = Indices.GraphicsFamily.value();
+    QueueCreateInfo.queueCount = 1;
 }
