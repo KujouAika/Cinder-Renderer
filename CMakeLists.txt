@@ -47,6 +47,8 @@ target_sources(${PROJECT_NAME} PRIVATE
     src/Core/Window.cpp
     src/Application.h
     src/Application.cpp
+    src/Core/Swapchain.h
+    src/Core/Swapchain.cpp
     src/Core/DeviceContext.h
     src/Core/DeviceContext.cpp
     src/Core/DeviceSelector.h
@@ -80,6 +82,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES
     src/Core/Window.h
     src/Core/Window.cpp
+    src/Core/Swapchain.h
+    src/Core/Swapchain.cpp
     src/Core/DeviceSelector.h
     src/Core/DeviceSelector.cpp
     src/Core/DeviceContext.h

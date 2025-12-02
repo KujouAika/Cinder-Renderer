@@ -1,6 +1,6 @@
 ﻿#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
-
+#include "Core/Swapchain.h"
 #include "Core/DeviceContext.h"
 #include "Core/DeviceSelector.h"
 #include <stdexcept>
@@ -63,7 +63,7 @@ namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，
         return VK_FALSE;
     }
 
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& InCreateInfo)
+    void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& InCreateInfo)
     {
         InCreateInfo = {};
         InCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -87,6 +87,8 @@ FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj)
     CreateLogicalDevice();
 
     CreateAllocator();
+
+    Swapchain = std::make_unique<FSwapchain>(*this, WindowRef);
 }
 
 FDeviceContext::~FDeviceContext()
@@ -144,7 +146,7 @@ void FDeviceContext::CreateInstance()
         CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
         CreateInfo.ppEnabledLayerNames = ValidationLayers.data();
 
-        populateDebugMessengerCreateInfo(DebugCreateInfo);
+        PopulateDebugMessengerCreateInfo(DebugCreateInfo);
         CreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&DebugCreateInfo;
     }
     else
@@ -170,7 +172,7 @@ void FDeviceContext::SetupDebugMessenger()
 
     VkDebugUtilsMessengerCreateInfoEXT CreateInfo{};
     // 复用填充逻辑
-    populateDebugMessengerCreateInfo(CreateInfo);
+    PopulateDebugMessengerCreateInfo(CreateInfo);
 
     if (CreateDebugUtilsMessengerEXT(Instance, &CreateInfo, nullptr, &DebugMessenger) != VK_SUCCESS)
     {
