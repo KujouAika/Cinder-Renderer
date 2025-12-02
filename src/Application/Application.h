@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "Core/Window.h"
-#include "Core/DeviceContext.h"
+#include "Window.h"
+#include "RHI/DeviceContext.h"
 #include <memory>
 
 class FApplication

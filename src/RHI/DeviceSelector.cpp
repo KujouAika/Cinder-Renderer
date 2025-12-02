@@ -1,4 +1,4 @@
-﻿#include "Core/DeviceSelector.h"
+﻿#include "DeviceSelector.h"
 #include <map>
 #include <set>
 #include <string>

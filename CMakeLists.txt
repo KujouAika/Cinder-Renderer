@@ -38,26 +38,40 @@ function(compile_shader SHADER_SOURCE SHADER_BINARY)
     )
 endfunction()
 
-# 4. 【关键修正】先创建可执行文件 (Target)
-add_executable(${PROJECT_NAME} src/main.cpp)
+set(SRC_APP
+    src/Application/Application.h
+    src/Application/Application.cpp
+    src/Application/Window.h
+    src/Application/Window.cpp
+)
 
+set(SRC_RHI
+    src/RHI/DeviceContext.h
+    src/RHI/DeviceContext.cpp
+    src/RHI/Swapchain.h
+    src/RHI/Swapchain.cpp
+    src/RHI/DeviceSelector.h
+    src/RHI/DeviceSelector.cpp
+)
 
-target_sources(${PROJECT_NAME} PRIVATE
-    src/Core/Window.h
-    src/Core/Window.cpp
-    src/Application.h
-    src/Application.cpp
-    src/Core/Swapchain.h
-    src/Core/Swapchain.cpp
-    src/Core/DeviceContext.h
-    src/Core/DeviceContext.cpp
-    src/Core/DeviceSelector.h
-    src/Core/DeviceSelector.cpp
+set(SRC_CORE
+    src/Core/VulkanHandle.h
+    src/Core/Macro.h
+)
+
+add_executable(${PROJECT_NAME} 
+    src/main.cpp
+    ${SRC_APP}
+    ${SRC_RHI}
+    ${SRC_CORE}
 )
 
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     src
+    src/Core
+    src/RHI
+    src/Application
     src/ThirdParty/VMA
     "${VULKAN_SDK_PATH}/Include"
 )
@@ -72,22 +86,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # 7. 预处理器定义
 target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_WIN32_KHR)
-
+target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
 
 # -----------------------------------------------------------------
-# 3. (可选但强烈推荐) Visual Studio 过滤器整理
-# Senior 思维：你的 Solution Explorer 不能是一团乱麻。
-# 手动通过 source_group 让 VS 里的文件结构和硬盘文件夹保持一致。
-# -----------------------------------------------------------------
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX "Source Files" FILES
-    src/Core/Window.h
-    src/Core/Window.cpp
-    src/Core/Swapchain.h
-    src/Core/Swapchain.cpp
-    src/Core/DeviceSelector.h
-    src/Core/DeviceSelector.cpp
-    src/Core/DeviceContext.h
-    src/Core/DeviceContext.cpp
-    src/Application.h
-    src/Application.cpp
-)
+
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${SRC_APP} ${SRC_RHI} ${SRC_CORE})

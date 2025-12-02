@@ -26,6 +26,8 @@ This project serves as a research testbed for implementing modern AAA rendering 
 * **Modern C++20 & Vulkan 1.3**: Built on the latest standards utilizing *Dynamic Rendering* and *Synchronization 2* for maximum driver efficiency.
 * **Asynchronous Compute**: Advanced queue ownership transfer and dedicated compute queue utilization for overlapping tasks (e.g., Culling, GI updates).
 * **Multi-threaded RHI**: Job-system based parallel Command Buffer recording to minimize CPU bottlenecks.
+* **RAII**: Robust resource management with automatic cleanup and lifetime tracking.
+* **Assert Macros**: Customizable assertion macros for debugging and error handling.
 
 ### 🎨 Bindless Material Pipeline
 * **Descriptor Indexing**: Full bindless architecture allowing shaders to access global texture arrays via runtime indices, eliminating descriptor set binding overhead.
@@ -59,6 +61,8 @@ Establishing a robust rendering backend and RHI abstraction layer.
 - [x] **Project Setup**: CMake environment & Visual Studio integration.
 - [x] **Vulkan Initialization**: Instance creation & Validation Layers hooks.
 - [x] **Device Selection**: Physical device ranking & Logical device creation with Multi-Queue support.
+- [ ] **RAII Wrappers**: Smart pointer based resource management.
+- [ ] **Assert Macros**: Custom assertion system for error handling.
 - [ ] **Memory Management**: Integration of **VMA** (Vulkan Memory Allocator).
 - [ ] **Presentation**: Swapchain creation & Robust resize handling.
 - [ ] **Render Loop**: Basic RenderPass & Framebuffer setup (Hello Triangle).

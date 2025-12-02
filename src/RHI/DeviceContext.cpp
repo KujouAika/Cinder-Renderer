@@ -1,8 +1,8 @@
 ﻿#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
-#include "Core/Swapchain.h"
-#include "Core/DeviceContext.h"
-#include "Core/DeviceSelector.h"
+#include "Swapchain.h"
+#include "DeviceContext.h"
+#include "DeviceSelector.h"
 #include <stdexcept>
 #include <iostream>
 #include <set>

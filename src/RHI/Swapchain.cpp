@@ -1,7 +1,6 @@
-﻿#define NOMINMAX
-#include "Core/Swapchain.h"
-#include "Core/DeviceContext.h"
-#include "Core/Window.h"
+﻿#include "Swapchain.h"
+#include "DeviceContext.h"
+#include "Application/Window.h"
 #include <algorithm>
 #include <iostream>
 
