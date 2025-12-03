@@ -126,9 +126,9 @@ void FDeviceContext::CreateInstance()
 {
     VkApplicationInfo AppInfo{};
     AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    AppInfo.pApplicationName = "Vulkan Renderer";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.pEngineName = "No Engine";
+    AppInfo.pApplicationName = "Cinder-Renderer";
+    AppInfo.applicationVersion = VK_MAKE_VERSION(2, 3, 0);
+    AppInfo.pEngineName = "Cinder";
     AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     AppInfo.apiVersion = VK_API_VERSION_1_3;
 
