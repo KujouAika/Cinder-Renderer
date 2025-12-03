@@ -50,7 +50,7 @@ Designed as a rigorous research testbed, Cinder aims to implement and **benchmar
 - [x] **Vulkan Init**: Robust Instance creation with Validation Layer hooks.
 - [x] **Device Strategy**: Physical device ranking & Logical device with **Multi-Queue** (Async Compute) support.
 - [ ] **Memory Management**: Integration of **VMA** (Vulkan Memory Allocator).
-- [x] **Infrastructure**: Implementation of `TVulkanHandle` (RAII) and `check/ensure` macros.
+- [x] **Infrastructure**: Implementation of RAII and `check/verify` macros.
 - [ ] **Presentation**: Swapchain creation with robust Resize/Minimize handling.
 - [ ] **RHI Abstraction**: Encapsulating commands into `RHICommandList`.
 
