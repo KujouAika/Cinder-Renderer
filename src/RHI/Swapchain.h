@@ -22,24 +22,28 @@ public:
     FSwapchain(FDeviceContext& DeviceContext, FWindow& Window);
     ~FSwapchain();
 
-    // --- 今天的核心任务：查询与决策 ---
+    void Create();
+    void Cleanup();
 
-    // 1. 查询显卡对 Surface 的支持情况
+    VkSwapchainKHR GetHandle() const { return Swapchain; }
+    VkFormat GetImageFormat() const { return ImageFormat; }
+    VkExtent2D GetExtent() const { return Extent; }
+
+    const std::vector<VkImage>& GetImages() const { return Images; }
+
     static FSwapchainSupportDetails QuerySwapChainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface);
-
-    // 2. 选择最佳表面格式 (SRGB)
     static VkSurfaceFormatKHR ChooseSwapSurfaceFormat(std::span<const VkSurfaceFormatKHR> AvailableFormats);
-
-    // 3. 选择最佳呈现模式 (Mailbox > FIFO)
     static VkPresentModeKHR ChooseSwapPresentMode(std::span<const VkPresentModeKHR> AvailablePresentModes);
-
-    // 4. 选择交换范围 (分辨率)
     static VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabilities, FWindow& Window);
 
 private:
     FDeviceContext& DeviceContextRef;
     FWindow& WindowRef;
 
-    // 可以在这里缓存一下今天的战果
+    VkSwapchainKHR Swapchain = VK_NULL_HANDLE;
+    std::vector<VkImage> Images;
+    VkFormat ImageFormat;
+    VkExtent2D Extent;
+
     FSwapchainSupportDetails SupportDetails;
 };

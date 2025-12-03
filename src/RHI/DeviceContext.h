@@ -24,6 +24,8 @@ public:
 
     VkSurfaceKHR GetSurface() const { return Surface; }
 
+    FQueueFamilyIndices GetQueueFamilyIndices() const { return QueueIndices; }
+
 private:
     void CreateInstance();       // 步骤 1
     void SetupDebugMessenger();  // 步骤 2 (Debug)
@@ -33,9 +35,8 @@ private:
 
     void CreateAllocator();
     
-    // 引用窗口
     FWindow& WindowRef;
-    // Vulkan 句柄
+
     VkInstance Instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE; // 验证层
     VkSurfaceKHR Surface = VK_NULL_HANDLE;

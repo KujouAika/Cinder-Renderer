@@ -4,16 +4,99 @@
 #include <algorithm>
 #include <iostream>
 
-// 构造函数暂时留空，或者先做一次查询测试
 FSwapchain::FSwapchain(FDeviceContext& InDeviceContext, FWindow& InWindow)
     : DeviceContextRef(InDeviceContext), WindowRef(InWindow)
 {
-    SupportDetails = QuerySwapChainSupport(DeviceContextRef.GetPhysicalDevice(), InDeviceContext.GetSurface());
+    Create();
 }
 
 FSwapchain::~FSwapchain()
 {
-    // 暂时没东西销毁
+    Cleanup();
+}
+
+void FSwapchain::Create()
+{
+    SupportDetails = QuerySwapChainSupport(DeviceContextRef.GetPhysicalDevice(), DeviceContextRef.GetSurface());
+    VkSurfaceFormatKHR SurfaceFormat = ChooseSwapSurfaceFormat(SupportDetails.Formats);
+    VkPresentModeKHR PresentMode = ChooseSwapPresentMode(SupportDetails.PresentModes);
+    VkExtent2D SwapchainExtent = ChooseSwapExtent(SupportDetails.Capabilities, WindowRef);
+
+    // + 1 防止驱动程序在等待 VSync 时阻塞 CPU
+    uint32_t ImageCount = SupportDetails.Capabilities.minImageCount + 1;
+
+    if (SupportDetails.Capabilities.maxImageCount > 0 && ImageCount > SupportDetails.Capabilities.maxImageCount)
+    {
+        ImageCount = SupportDetails.Capabilities.maxImageCount;
+    }
+
+    VkSwapchainCreateInfoKHR CreateInfo{};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    CreateInfo.surface = DeviceContextRef.GetSurface();
+
+    CreateInfo.minImageCount = ImageCount;
+    CreateInfo.imageFormat = SurfaceFormat.format;
+    CreateInfo.imageColorSpace = SurfaceFormat.colorSpace;
+    CreateInfo.imageExtent = SwapchainExtent;
+    CreateInfo.imageArrayLayers = 1; // 非 VR 始终为 1
+    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // 我们直接往上画颜色
+    CreateInfo.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    FQueueFamilyIndices Indices = DeviceContextRef.GetQueueFamilyIndices();
+    uint32_t QueueFamilyIndices[] = { Indices.GraphicsFamily.value(), Indices.PresentFamily.value() };
+
+    if (Indices.GraphicsFamily != Indices.PresentFamily)
+    {
+        // 如果图形和呈现不是同一个队列 (罕见，但存在)，需要并发模式
+        // 这样就不需要手动转移所有权了 (虽然性能略低，但安全)
+        CreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        CreateInfo.queueFamilyIndexCount = 2;
+        CreateInfo.pQueueFamilyIndices = QueueFamilyIndices;
+    }
+    else
+    {
+        // 最常见情况：独占模式 (性能最佳)
+        CreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        CreateInfo.queueFamilyIndexCount = 0; // Optional
+        CreateInfo.pQueueFamilyIndices = nullptr; // Optional
+    }
+
+    CreateInfo.preTransform = SupportDetails.Capabilities.currentTransform; // 不做旋转 (移动端可能需要处理)
+    CreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // 不透明，忽略窗口系统的 Alpha 通道
+    CreateInfo.presentMode = PresentMode;
+    CreateInfo.clipped = VK_TRUE; // 被其他窗口挡住的像素不予计算 (Clip)
+
+    // [Resize 预留] 旧交换链句柄，用于平滑切换。W2D5 处理。
+    CreateInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    if (vkCreateSwapchainKHR(DeviceContextRef.GetLogicalDevice(), &CreateInfo, nullptr, &Swapchain) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create swap chain!");
+    }
+
+    // 保存这些属性供后续 (创建 ImageView) 使用
+    ImageFormat = SurfaceFormat.format;
+    Extent = SwapchainExtent;
+
+    // 8. 获取 Swapchain Images (句柄)
+    // Vulkan 已经创建好了 Image 对象，我们要把句柄拿出来
+    vkGetSwapchainImagesKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, &ImageCount, nullptr);
+    Images.resize(ImageCount);
+    vkGetSwapchainImagesKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, &ImageCount, Images.data());
+
+    std::cout << "Swapchain created successfully!" << std::endl;
+    std::cout << "  - Format: " << ImageFormat << std::endl;
+    std::cout << "  - Extent: " << Extent.width << "x" << Extent.height << std::endl;
+    std::cout << "  - Image Count: " << Images.size() << std::endl;
+}
+
+void FSwapchain::Cleanup()
+{
+    if (Swapchain != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, nullptr);
+        Swapchain = VK_NULL_HANDLE;
+    }
 }
 
 FSwapchainSupportDetails FSwapchain::QuerySwapChainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)

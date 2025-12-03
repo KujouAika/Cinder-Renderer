@@ -98,6 +98,11 @@ FDeviceContext::~FDeviceContext()
         vkDeviceWaitIdle(LogicalDevice);
     }
 
+    if (Swapchain)
+    {
+        Swapchain.reset();
+    }
+
     if (Allocator != VK_NULL_HANDLE)
     {
         vmaDestroyAllocator(Allocator);
