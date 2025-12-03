@@ -1,8 +1,6 @@
 ﻿#include "Swapchain.h"
 #include "DeviceContext.h"
 #include "Application/Window.h"
-#include <algorithm>
-#include <iostream>
 
 FSwapchain::FSwapchain(FDeviceContext& InDeviceContext, FWindow& InWindow)
     : DeviceContextRef(InDeviceContext), WindowRef(InWindow)

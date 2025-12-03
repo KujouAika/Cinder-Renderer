@@ -1,6 +1,4 @@
-﻿#include <vulkan/vulkan.h>
-#include <functional>
-
+﻿#pragma once
 template<typename T>
 class TVulkanHandle
 {

@@ -1,6 +1,4 @@
 ﻿#include "Window.h"
-#include <stdexcept>
-#include <vulkan/vulkan.h>
 
 FWindow::FWindow(const std::string& InTitle, int InWidth, int InHeight)
     : Width(InWidth), Height(InHeight)

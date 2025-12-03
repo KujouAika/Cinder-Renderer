@@ -1,9 +1,4 @@
 ﻿#include "DeviceSelector.h"
-#include <map>
-#include <set>
-#include <string>
-#include <stdexcept>
-#include <iostream>
 
 namespace
 {

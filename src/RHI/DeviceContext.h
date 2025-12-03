@@ -1,10 +1,7 @@
 ﻿#pragma once
-#include <vulkan/vulkan.h>
-#include <vector>
 #include "DeviceSelector.h"
 #include "Window.h" // 需要知道窗口信息
 #include "vk_mem_alloc.h"
-#include <memory>
 
 class FDeviceContext
 {
@@ -13,25 +10,25 @@ public:
     FDeviceContext(FWindow& WindowObj);
     ~FDeviceContext();
 
-    VkPhysicalDevice GetPhysicalDevice() const { return PhysicalDevice; }
-    VkDevice GetLogicalDevice() const { return LogicalDevice; }
+    VkPhysicalDevice GetPhysicalDevice() const { check(PhysicalDevice != VK_NULL_HANDLE); return PhysicalDevice; }
+    VkDevice GetLogicalDevice() const { check(LogicalDevice != VK_NULL_HANDLE); return LogicalDevice; }
     
-    VmaAllocator GetAllocator() const { return Allocator; }
+    VmaAllocator GetAllocator() const { check(Allocator != VK_NULL_HANDLE); return Allocator; }
 
-    VkQueue GetGraphicsQueue() const { return GraphicsQueue; }
-    VkQueue GetPresentQueue() const { return PresentQueue; }
-    VkQueue GetComputeQueue() const { return ComputeQueue; }
+    VkQueue GetGraphicsQueue() const { check(GraphicsQueue != VK_NULL_HANDLE); return GraphicsQueue; }
+    VkQueue GetPresentQueue() const { check(PresentQueue != VK_NULL_HANDLE); return PresentQueue; }
+    VkQueue GetComputeQueue() const { check(ComputeQueue != VK_NULL_HANDLE); return ComputeQueue; }
 
-    VkSurfaceKHR GetSurface() const { return Surface; }
+    VkSurfaceKHR GetSurface() const { check(Surface != VK_NULL_HANDLE); return Surface; }
 
     FQueueFamilyIndices GetQueueFamilyIndices() const { return QueueIndices; }
 
 private:
-    void CreateInstance();       // 步骤 1
-    void SetupDebugMessenger();  // 步骤 2 (Debug)
+    void CreateInstance();
+    void SetupDebugMessenger();
     void CreateSurface();
-    void PickPhysicalDevice();   // 步骤 3
-    void CreateLogicalDevice();  // 步骤 4
+    void PickPhysicalDevice();
+    void CreateLogicalDevice();
 
     void CreateAllocator();
     

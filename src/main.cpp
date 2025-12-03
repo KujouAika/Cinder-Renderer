@@ -1,5 +1,5 @@
 ﻿#include "Application.h"
-#include <iostream>
+#include "Core/Macro.h"
 
 int main(int argc, char* argv[])
 {

@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_vulkan.h>
-#include <string>
-#include <vector>
 
 class FWindow
 {

@@ -1,7 +1,5 @@
 ﻿#include "Application.h"
 #include <SDL2/SDL.h>
-#include <stdexcept> // 用于抛出异常
-#include <iostream>
 
 FApplication::FApplication()
 {

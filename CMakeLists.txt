@@ -57,6 +57,7 @@ set(SRC_RHI
 set(SRC_CORE
     src/Core/VulkanHandle.h
     src/Core/Macro.h
+    src/Core/Common.h
 )
 
 add_executable(${PROJECT_NAME} 
@@ -83,6 +84,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     "${VULKAN_SDK_PATH}/Lib/SDL2main.lib" # 链接 SDL2main.lib
 )
 
+# 预编译头 (PCH)
+# REUSE_FROM: 如果有多个目标，可以复用 PCH
+target_precompile_headers(${PROJECT_NAME} PRIVATE
+    src/Core/Common.h
+)
 
 # 7. 预处理器定义
 target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_WIN32_KHR)
