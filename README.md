@@ -17,7 +17,7 @@ Designed as a rigorous research testbed, Cinder aims to implement and **benchmar
 
 ### 🏗️ Core Engineering & Infrastructure
 * **Zero-Overhead RAII**: Custom template-based resource wrappers (`TVulkanHandle<T>`) ensuring leak-free lifecycle management without runtime cost.
-* **Robust Error Handling**: Unreal-style strippable assertion macros (`check`, `ensure`) and a validation layer "watchdog" for fail-fast debugging.
+* **Robust Error Handling**: Unreal-style strippable assertion macros (`check`, `verify`) and a validation layer "watchdog" for fail-fast debugging.
 * **Modern C++20**: Extensive use of `std::span`, `concepts`, and module-based architecture.
 * **Multi-threaded Architecture**: Job-system based parallel Command Buffer recording to minimize CPU bottlenecks.
 
