@@ -5,6 +5,8 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey?style=flat&logo=windows)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+Experiments with Vulkan1.3.
+
 ---
 
 ## 🗺️ Roadmap
@@ -28,31 +30,14 @@
 - [ ] **Visuals**: Disney PBR lighting & CSM with PCF & LUT based **Sky Atmosphere**.
 - [ ] **Profiling**: **ImGui** & **RenderDoc API**.
 
-### Phase IV: Mobile Deferred (PLS)
-- [ ] **Pipeline Architecture**: Pipeline based on Vulkan Subpass and Metal Tile Shading.
-- [ ] **Memory Optimization**: Implement **Memoryless GBuffer**.
-- [ ] **Bandwidth Verification**: Ensuring minimal memory bandwidth usage.
-- [ ] **Lighting Calculation**: Implementing the Pixel Local Storage (PLS) pattern.
-
-### Phase V: Mobile Mesh Shader
-- [ ] **Data Preprocessing**: Integrate `meshoptimizer` to partition mesh geometry into **Meshlets**.
-- [ ] **API Adaptation**: **Object/Mesh Shader** API on Metal and `VK_EXT_mesh_shader` extension on Vulkan.
-- [ ] **Geometry Culling**: Cluster-based Frustum Culling and Backface Culling.
-
-### Phase VI: Mobile SDF GI
-- [ ] **SDF Generation**: Convert static meshes into **Mesh Distance Fields (MDF)** 3D textures.
-- [ ] **Ray Marching**: Lightweight **Sphere Tracing** Shaders.
-- [ ] **Scene Management**: A simplified **Global Distance Field**.
-- [ ] **Hybrid Rendering**: Blend with the main rendering pipeline.
-
-### Phase VII: Next-Gen Geometry
+### Phase IV: Next-Gen Geometry
 - [ ] **Mesh Shaders**: Hardware pipeline implementation.
 - [ ] **VisBuffer**: ID Buffer rendering & Material reconstruction.
 - [ ] **Software Rasterizer**: Compute Shader rasterizer (64-bit Atomics).
 - [ ] **Hybrid Pipeline**: Dynamic switching between HW/SW Rasterization.
 - [ ] **Streaming**: Error-metric based LOD selection (DAG).
 
-### Phase VIII: Global Illumination
+### Phase V: Global Illumination
 - [ ] **SDF**: Mesh Distance Field & Global Clipmap generation.
 - [ ] **SWRT**: Software Ray Tracing (Sphere Tracing).
 - [ ] **Radiance Cache**: Probe hierarchy update.
@@ -60,7 +45,7 @@
 - [ ] **RTX 40**: Integration of **SER** and **OMM**.
 - [ ] **Denoising**: Separate Temporal/Spatial filter chain.
 
-### Phase IX: Engineering
+### Phase VI: Engineering
 - [ ] **Runtime Config**: Full ImGui-based feature toggling system.
 - [ ] **HDR**: 10-bit Output & Tone Mapping.
 - [ ] **DLSS 4**: Streamline SDK integration (SR + FG).

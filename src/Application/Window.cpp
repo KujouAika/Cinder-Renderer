@@ -3,10 +3,6 @@
 FWindow::FWindow(const std::string& InTitle, int InWidth, int InHeight)
     : Width(InWidth), Height(InHeight)
 {
-
-    // 设置窗口标志
-    // SDL_WINDOW_VULKAN: 告诉 SDL 我们要用 Vulkan 渲染，不要创建 OpenGL 上下文
-    // SDL_WINDOW_RESIZABLE: 允许用户拖拽改变窗口大小
     uint32_t Flags = SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE;
 
     AppWindow = SDL_CreateWindow(

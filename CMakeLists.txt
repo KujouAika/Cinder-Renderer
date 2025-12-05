@@ -58,6 +58,7 @@ set(SRC_CORE
     src/Core/VulkanHandle.h
     src/Core/Macro.h
     src/Core/Common.h
+    src/Core/Config.h
 )
 
 add_executable(${PROJECT_NAME} 
@@ -88,6 +89,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # REUSE_FROM: 如果有多个目标，可以复用 PCH
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     src/Core/Common.h
+    src/Core/Config.h
 )
 
 # 7. 预处理器定义

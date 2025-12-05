@@ -18,6 +18,12 @@ public:
     // 获取窗口扩展（Vulkan 创建 Instance 需要知道它要在这个窗口上画画）
     std::vector<const char*> GetVulkanExtensions() const;
 
+    void GetSize(int& OutWidth, int& OutHeight) const
+    {
+        check(AppWindow);
+        SDL_GetWindowSize(AppWindow, &OutWidth, &OutHeight);
+    }
+
 private:
     SDL_Window* AppWindow = nullptr;
     int Width;

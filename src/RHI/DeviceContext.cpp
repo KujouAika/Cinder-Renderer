@@ -5,12 +5,6 @@
 #include "DeviceSelector.h"
 
 namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，只在当前文件可见
-#ifdef NDEBUG
-    const bool bEnableValidationLayers = false;
-#else
-    const bool bEnableValidationLayers = true;
-#endif
-
     const std::vector<const char*> ValidationLayers =
     {
         "VK_LAYER_KHRONOS_validation",
@@ -127,11 +121,11 @@ void FDeviceContext::CreateInstance()
 {
     VkApplicationInfo AppInfo{};
     AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    AppInfo.pApplicationName = "Cinder-Renderer";
-    AppInfo.applicationVersion = VK_MAKE_VERSION(2, 3, 0);
-    AppInfo.pEngineName = "Cinder";
-    AppInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    AppInfo.apiVersion = VK_API_VERSION_1_3;
+    AppInfo.pApplicationName = APP_NAME;
+    AppInfo.applicationVersion = APP_VERSION;
+    AppInfo.pEngineName = ENGINE_NAME;
+    AppInfo.engineVersion = ENGINE_VERSION;
+    AppInfo.apiVersion = VK_API_VERSION;
 
     VkInstanceCreateInfo CreateInfo{};
     CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -249,16 +243,6 @@ void FDeviceContext::CreateLogicalDevice()
     CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
     CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
 
-    if (bEnableValidationLayers)
-    {
-        CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-        CreateInfo.ppEnabledLayerNames = ValidationLayers.data();
-    }
-    else
-    {
-        CreateInfo.enabledLayerCount = 0;
-    }
-
     if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create logical device!");
@@ -277,7 +261,7 @@ void FDeviceContext::CreateAllocator()
     AllocatorInfo.device = LogicalDevice;
     AllocatorInfo.instance = Instance;
 
-    AllocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    AllocatorInfo.vulkanApiVersion = VK_API_VERSION;
     AllocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; // Buffer Device Address (BDA)
 
     if (vmaCreateAllocator(&AllocatorInfo, &Allocator) != VK_SUCCESS)

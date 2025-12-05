@@ -1,12 +1,12 @@
 ﻿#pragma once
 #include "DeviceSelector.h"
-#include "Window.h" // 需要知道窗口信息
+#include "Window.h"
 #include "vk_mem_alloc.h"
+#include "Swapchain.h"
 
 class FDeviceContext
 {
 public:
-    // 初始化需要窗口，因为 Surface 的创建依赖窗口
     FDeviceContext(FWindow& WindowObj);
     ~FDeviceContext();
 
@@ -22,6 +22,8 @@ public:
     VkSurfaceKHR GetSurface() const { check(Surface != VK_NULL_HANDLE); return Surface; }
 
     FQueueFamilyIndices GetQueueFamilyIndices() const { return QueueIndices; }
+
+    FSwapchain& GetSwapchain() const { check(Swapchain); return *Swapchain; }
 
 private:
     void CreateInstance();

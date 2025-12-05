@@ -20,8 +20,9 @@ public:
 
     void Create();
     void Cleanup();
+    void Recreate();
 
-    VkSwapchainKHR GetHandle() const { return Swapchain; }
+    VkSwapchainKHR GetHandle() const { check(Swapchain != VK_NULL_HANDLE); return Swapchain; }
     VkFormat GetImageFormat() const { return ImageFormat; }
     VkExtent2D GetExtent() const { return Extent; }
 
@@ -32,12 +33,20 @@ public:
     static VkPresentModeKHR ChooseSwapPresentMode(std::span<const VkPresentModeKHR> AvailablePresentModes);
     static VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabilities, FWindow& Window);
 
+    const std::vector<TVulkanHandle<VkImageView>>& GetImageViews() const { return ImageViews; }
+
 private:
+    void CreateImageViews();
+
     FDeviceContext& DeviceContextRef;
     FWindow& WindowRef;
 
     VkSwapchainKHR Swapchain = VK_NULL_HANDLE;
     std::vector<VkImage> Images;
+
+    using FImageViewHandle = TVulkanHandle<VkImageView>;
+    std::vector<FImageViewHandle> ImageViews;
+
     VkFormat ImageFormat;
     VkExtent2D Extent;
 

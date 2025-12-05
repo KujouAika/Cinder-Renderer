@@ -17,5 +17,6 @@
 #include <vulkan/vulkan.h>
 
 // 3. 基础设施
+#include "Config.h"
 #include "Macro.h" 
 #include "VulkanHandle.h"

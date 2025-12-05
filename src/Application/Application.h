@@ -15,4 +15,6 @@ private:
     // 注意初始化顺序：Window 必须在 DeviceContext 之前！
     std::unique_ptr<FWindow> AppWindow;
     std::unique_ptr<FDeviceContext> Context;
+
+    bool bFramebufferResized = false;
 };

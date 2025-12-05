@@ -37,7 +37,7 @@ void FSwapchain::Create()
     CreateInfo.imageColorSpace = SurfaceFormat.colorSpace;
     CreateInfo.imageExtent = SwapchainExtent;
     CreateInfo.imageArrayLayers = 1; // 非 VR 始终为 1
-    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; // 我们直接往上画颜色
+    CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     CreateInfo.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
     FQueueFamilyIndices Indices = DeviceContextRef.GetQueueFamilyIndices();
@@ -64,20 +64,27 @@ void FSwapchain::Create()
     CreateInfo.presentMode = PresentMode;
     CreateInfo.clipped = VK_TRUE; // 被其他窗口挡住的像素不予计算 (Clip)
 
-    // [Resize 预留] 旧交换链句柄，用于平滑切换。W2D5 处理。
-    CreateInfo.oldSwapchain = VK_NULL_HANDLE;
-
-    if (vkCreateSwapchainKHR(DeviceContextRef.GetLogicalDevice(), &CreateInfo, nullptr, &Swapchain) != VK_SUCCESS)
+    // Resize
+    VkSwapchainKHR OldSwapchain = Swapchain;
+    VkSwapchainKHR NewSwapchain = VK_NULL_HANDLE;
+    if (Swapchain != VK_NULL_HANDLE)
+    {
+        CreateInfo.oldSwapchain = Swapchain;
+    }
+    
+    if (vkCreateSwapchainKHR(DeviceContextRef.GetLogicalDevice(), &CreateInfo, nullptr, &NewSwapchain) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create swap chain!");
     }
-
-    // 保存这些属性供后续 (创建 ImageView) 使用
+    Swapchain = NewSwapchain;
+    if (OldSwapchain != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(DeviceContextRef.GetLogicalDevice(), OldSwapchain, nullptr);
+    }
+    
     ImageFormat = SurfaceFormat.format;
     Extent = SwapchainExtent;
 
-    // 8. 获取 Swapchain Images (句柄)
-    // Vulkan 已经创建好了 Image 对象，我们要把句柄拿出来
     vkGetSwapchainImagesKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, &ImageCount, nullptr);
     Images.resize(ImageCount);
     vkGetSwapchainImagesKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, &ImageCount, Images.data());
@@ -90,11 +97,25 @@ void FSwapchain::Create()
 
 void FSwapchain::Cleanup()
 {
+    ImageViews.clear();
+    
     if (Swapchain != VK_NULL_HANDLE)
     {
         vkDestroySwapchainKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, nullptr);
         Swapchain = VK_NULL_HANDLE;
     }
+}
+
+void FSwapchain::Recreate()
+{
+    Create();
+    CreateImageViews();
+
+    for (size_t i = 0; i < ImageViews.size(); i++)
+    {
+        check(ImageViews[i].Get() != VK_NULL_HANDLE);
+    }
+    std::cout << "[Test] All " << ImageViews.size() << " ImageViews created successfully." << std::endl;
 }
 
 FSwapchainSupportDetails FSwapchain::QuerySwapChainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
@@ -190,5 +211,42 @@ VkExtent2D FSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabili
         ActualExtent.height = std::clamp(ActualExtent.height, Capabilities.minImageExtent.height, Capabilities.maxImageExtent.height);
 
         return ActualExtent;
+    }
+}
+
+void FSwapchain::CreateImageViews()
+{
+    VkImageViewCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.format = ImageFormat;
+    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    createInfo.subresourceRange.baseMipLevel = 0;
+    createInfo.subresourceRange.levelCount = 1;
+    createInfo.subresourceRange.baseArrayLayer = 0;
+    createInfo.subresourceRange.layerCount = 1;
+    
+    // Deleter
+    TVulkanHandle<VkImageView>::FDeleter ImageViewDeleter =
+        [](VkDevice InDevice, VkImageView InImageView, const VkAllocationCallbacks* pAllocator)
+        {
+            vkDestroyImageView(InDevice, InImageView, pAllocator);
+        };
+
+    ImageViews.clear();
+
+    for (size_t i = 0; i < Images.size(); i++)
+    {
+        createInfo.image = Images[i];
+        VkImageView imageViewHandle = VK_NULL_HANDLE;
+        if (vkCreateImageView(DeviceContextRef.GetLogicalDevice(), &createInfo, nullptr, &imageViewHandle) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create image views!");
+        }
+        ImageViews.emplace_back(DeviceContextRef.GetLogicalDevice(), imageViewHandle, ImageViewDeleter);
     }
 }
