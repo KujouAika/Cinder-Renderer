@@ -33,7 +33,8 @@ private:
     void CreateLogicalDevice();
 
     void CreateAllocator();
-    
+    void TestVMA();
+
     FWindow& WindowRef;
 
     VkInstance Instance = VK_NULL_HANDLE;

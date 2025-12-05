@@ -243,6 +243,12 @@ void FDeviceContext::CreateLogicalDevice()
     CreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
     CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
 
+    VkPhysicalDeviceVulkan12Features vulkan12Features{};
+    vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    vulkan12Features.bufferDeviceAddress = VK_TRUE; // BDA
+    vulkan12Features.descriptorIndexing = VK_TRUE; // Bindless
+
+    CreateInfo.pNext = &vulkan12Features;
     if (vkCreateDevice(PhysicalDevice, &CreateInfo, nullptr, &LogicalDevice) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create logical device!");
@@ -270,4 +276,34 @@ void FDeviceContext::CreateAllocator()
     }
 
     std::cout << "VMA Initialized Successfully." << std::endl;
+    TestVMA();
+}
+
+void FDeviceContext::TestVMA()
+{
+    // 1. 定义 Buffer 信息 (创建一个 1KB 的顶点缓冲区)
+    VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    bufferInfo.size = 1024; // 1KB
+    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_AUTO; // VMA 3.0+ 推荐的用法
+    // 如果希望这块内存可以被 CPU 写入 (比如 Staging Buffer)，加上：
+    // allocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+
+    VkBuffer testBuffer;
+    VmaAllocation testAlloc;
+
+    check(Allocator != VK_NULL_HANDLE);
+    VkResult result = vmaCreateBuffer(Allocator, &bufferInfo, &allocInfo, &testBuffer, &testAlloc, nullptr);
+
+    if (result == VK_SUCCESS)
+    {
+        std::cout << "[VMA Test] Buffer created successfully via VMA!" << std::endl;
+        vmaDestroyBuffer(Allocator, testBuffer, testAlloc);
+    }
+    else
+    {
+        throw std::runtime_error("[VMA Test] Failed to create buffer!");
+    }
 }
