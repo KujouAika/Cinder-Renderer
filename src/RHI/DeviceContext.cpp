@@ -79,6 +79,8 @@ FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj)
     CreateAllocator();
 
     Swapchain = std::make_unique<FSwapchain>(*this, WindowRef);
+
+    CreateRenderPass();
 }
 
 FDeviceContext::~FDeviceContext()
@@ -86,6 +88,11 @@ FDeviceContext::~FDeviceContext()
     if (LogicalDevice != VK_NULL_HANDLE)
     {
         vkDeviceWaitIdle(LogicalDevice);
+    }
+
+    if (RenderPass)
+    {
+        vkDestroyRenderPass(LogicalDevice, RenderPass, nullptr);
     }
 
     if (Swapchain)
@@ -282,7 +289,8 @@ void FDeviceContext::CreateAllocator()
 void FDeviceContext::TestVMA()
 {
     // 1. 定义 Buffer 信息 (创建一个 1KB 的顶点缓冲区)
-    VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    VkBufferCreateInfo bufferInfo {};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = 1024; // 1KB
     bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
@@ -305,5 +313,49 @@ void FDeviceContext::TestVMA()
     else
     {
         throw std::runtime_error("[VMA Test] Failed to create buffer!");
+    }
+}
+
+void FDeviceContext::CreateRenderPass()
+{
+    VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = Swapchain->GetImageFormat();
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    VkRenderPassCreateInfo CreateInfo {};
+    CreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    CreateInfo.attachmentCount = 1;
+    CreateInfo.pAttachments = &colorAttachment;
+    CreateInfo.dependencyCount = 1;
+    CreateInfo.pDependencies = &dependency;
+    CreateInfo.subpassCount = 1;
+    CreateInfo.pSubpasses = &subpass;
+
+    if (vkCreateRenderPass(LogicalDevice, &CreateInfo, nullptr, &RenderPass) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create render pass!");
     }
 }

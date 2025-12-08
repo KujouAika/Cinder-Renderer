@@ -25,6 +25,8 @@ public:
 
     FSwapchain& GetSwapchain() const { check(Swapchain); return *Swapchain; }
 
+    VkRenderPass GetRenderPass() const { check(RenderPass); return RenderPass; }
+
 private:
     void CreateInstance();
     void SetupDebugMessenger();
@@ -34,6 +36,8 @@ private:
 
     void CreateAllocator();
     void TestVMA();
+
+    void CreateRenderPass();
 
     FWindow& WindowRef;
 
@@ -51,4 +55,6 @@ private:
     VmaAllocator Allocator = VK_NULL_HANDLE;
 
     std::unique_ptr<class FSwapchain> Swapchain;
+
+    VkRenderPass RenderPass = VK_NULL_HANDLE;
 };
