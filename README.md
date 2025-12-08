@@ -14,6 +14,8 @@ Experiments with Vulkan1.3.
 ### Phase I: Foundation & RHI Abstraction
 - [x] **Device Strategy**: Multi-Queue support (Async Compute) & Physical device ranking.
 - [x] **Memory Management**: **VMA** integration with sub-allocation logic.
+- [ ] **Render Pass & Framebuffers**: Define attachments (Load/Store ops) & render targets.
+- [ ] **Synchronization**: Fences & Semaphores for Frames-in-Flight.
 - [ ] **RHI Abstraction**: Encapsulating commands into `RHICommandList`.
 - [ ] **Shader System**: Automated layout reflection via `SPIRV-Reflect`.
 - [ ] **Bindless**: **Descriptor Indexing** implementation (Global Texture Array).
