@@ -1,77 +1,79 @@
 ﻿cmake_minimum_required(VERSION 3.25)
 
-
+# ==============================================================================
+# 1. 项目基础配置
+# ==============================================================================
 project(VulkanRenderer CXX)
 
-
 if(MSVC)
-    # 强制 MSVC 编译器使用 UTF-8 编码读取源码，并输出 UTF-8 格式的日志
     add_compile_options(/utf-8)
 endif()
-
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# ==============================================================================
+# 2. 变量定义 (统一管理路径)
+# ==============================================================================
+set(SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/Shaders")
 
-# 1. 查找 Vulkan (这会定义 Vulkan::Vulkan 和 Vulkan_GLSLC_EXECUTABLE)
+# ==============================================================================
+# 3. 寻找依赖环境
+# ==============================================================================
 find_package(Vulkan REQUIRED)
 
-
-# 2. 检查环境变量
 if (NOT DEFINED ENV{VULKAN_SDK})
-    message(FATAL_ERROR "VULKAN_SDK environment variable is not set. Please install Vulkan SDK.")
+    message(FATAL_ERROR "VULKAN_SDK environment variable is not set.")
 endif()
 
-
-# 3. 路径转换与变量定义
 file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK_PATH)
 
-
-# 尝试寻找 Vulkan SDK 里的 DXC
+# DXC 编译器
 find_program(DXC_EXECUTABLE dxc
     HINTS "${VULKAN_SDK_PATH}/Bin"
     DOC "Path to DirectX Shader Compiler"
 )
-
-
 if(NOT DXC_EXECUTABLE)
-    message(FATAL_ERROR "Could not find dxc.exe! Please install Vulkan SDK.")
+    message(FATAL_ERROR "Could not find dxc.exe!")
 endif()
 
+# ==============================================================================
+# 4. 预处理 (创建文件夹)
+# ==============================================================================
+file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})
 
-# 定义一个宏，用于编译 HLSL 到 SPIR-V
-# 参数:
-#   SHADER_SOURCE: 源代码路径 (如 Shaders/Triangle.hlsl)
-#   PROFILE:       编译目标 (如 vs_6_0, ps_6_0)
-#   ENTRY_POINT:   入口函数 (如 VSMain)
-#   OUTPUT_SPV:    输出文件名 (如 Triangle.vert.spv)
-function(compile_shader SHADER_SOURCE PROFILE ENTRY_POINT OUTPUT_SPV)
-    # 定义输出文件的完整路径 (放到构建目录的 bin 下，或者和 exe 同级)
-    set(SPV_FILE "${CMAKE_BINARY_DIR}/${OUTPUT_SPV}")
+# ==============================================================================
+# 5. 函数定义
+# ==============================================================================
+function(compile_shader SHADER_SOURCE PROFILE ENTRY_POINT OUTPUT_FILENAME)
+    # 拼接完整输出路径
+    set(FULL_OUTPUT_PATH "${SHADER_OUTPUT_DIR}/${OUTPUT_FILENAME}")
 
-    # 添加自定义命令
     add_custom_command(
-        OUTPUT ${SPV_FILE}
-        COMMAND ${DXC_EXECUTABLE} -T ${PROFILE} -E ${ENTRY_POINT} -Fo ${SPV_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_SOURCE} -spirv
+        OUTPUT ${FULL_OUTPUT_PATH}
+        # 【关键】使用 -Fo 指定完整路径
+        COMMAND ${DXC_EXECUTABLE} -T ${PROFILE} -E ${ENTRY_POINT} -Fo ${FULL_OUTPUT_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_SOURCE} -spirv
         MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_SOURCE}
-        COMMENT "Compiling HLSL shader: ${SHADER_SOURCE} -> ${OUTPUT_SPV}"
+        COMMENT "Compiling HLSL: ${SHADER_SOURCE} -> ${OUTPUT_FILENAME}"
     )
 
-    # 将生成的 .spv 文件添加到一个列表中，稍后用来创建 Target
-    list(APPEND ALL_GENERATED_SPV_FILES ${SPV_FILE})
-    # 因为是在函数里，需要将列表变量向上传递到父作用域
+    # 将生成的完整路径添加到列表
+    list(APPEND ALL_GENERATED_SPV_FILES ${FULL_OUTPUT_PATH})
     set(ALL_GENERATED_SPV_FILES ${ALL_GENERATED_SPV_FILES} PARENT_SCOPE)
 endfunction()
 
+# ==============================================================================
+# 6. Shader 编译任务定义
+# ==============================================================================
 compile_shader("Shaders/Triangle.hlsl" "vs_6_0" "VSMain" "Triangle.vert.spv")
 compile_shader("Shaders/Triangle.hlsl" "ps_6_0" "PSMain" "Triangle.frag.spv")
 
-# 创建一个自定义 Target 叫 "CompileShaders"
-# 这样 VS 解决方案里会多出一个项目，专门管 Shader 编译
+# Target 管理 Shader 任务
 add_custom_target(CompileShaders ALL DEPENDS ${ALL_GENERATED_SPV_FILES})
 
-
+# ==============================================================================
+# 7. 定义 C++ 源码
+# ==============================================================================
 set(SRC_APP
     src/Application/Application.h
     src/Application/Application.cpp
@@ -96,6 +98,13 @@ set(SRC_CORE
     src/Core/Utils.h
 )
 
+# 使用 source_group 整理 VS 中的目录结构
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Source Files" FILES 
+    ${SRC_APP} ${SRC_RHI} ${SRC_CORE} src/main.cpp)
+
+# ==============================================================================
+# 8. 构建主程序 (Executable)
+# ==============================================================================
 add_executable(${PROJECT_NAME} 
     src/main.cpp
     ${SRC_APP}
@@ -103,6 +112,10 @@ add_executable(${PROJECT_NAME}
     ${SRC_CORE}
 )
 
+# ==============================================================================
+# 9. 配置目标属性 (Include, Link, Defines, Dependencies)
+# ==============================================================================
+# 确保先编译 Shader 再链接程序
 add_dependencies(${PROJECT_NAME} CompileShaders)
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
@@ -114,23 +127,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "${VULKAN_SDK_PATH}/Include"
 )
 
-
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     Vulkan::Vulkan 
-    "${VULKAN_SDK_PATH}/Lib/SDL2.lib"      # 链接 SDL2.lib
-    "${VULKAN_SDK_PATH}/Lib/SDL2main.lib" # 链接 SDL2main.lib
+    "${VULKAN_SDK_PATH}/Lib/SDL2.lib"
+    "${VULKAN_SDK_PATH}/Lib/SDL2main.lib"
 )
 
-# 预编译头 (PCH)
-# REUSE_FROM: 如果有多个目标，可以复用 PCH
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     src/Core/Common.h
 )
 
-# 7. 预处理器定义
 target_compile_definitions(${PROJECT_NAME} PRIVATE VK_USE_PLATFORM_WIN32_KHR)
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX)
 
-# -----------------------------------------------------------------
-
-source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/src PREFIX "Source Files" FILES ${SRC_APP} ${SRC_RHI} ${SRC_CORE})
+target_compile_definitions(${PROJECT_NAME} PRIVATE 
+    "SHADER_ROOT=\"${SHADER_OUTPUT_DIR}\""
+)

@@ -11,43 +11,62 @@ Experiments with Vulkan1.3.
 
 ## 🗺️ Roadmap
 
-### Phase I: Foundation & RHI Abstraction
-- [x] **Device Strategy**: Multi-Queue support (Async Compute) & Physical device ranking.
-- [x] **Memory Management**: **VMA** integration with sub-allocation logic.
-- [ ] **Render Pass & Framebuffers**: Define attachments (Load/Store ops) & render targets.
-- [ ] **Synchronization**: Fences & Semaphores for Frames-in-Flight.
-- [ ] **RHI Abstraction**: Encapsulating commands into `RHICommandList`.
-- [ ] **Shader System**: Automated layout reflection via `SPIRV-Reflect`.
-- [ ] **Bindless**: **Descriptor Indexing** implementation (Global Texture Array).
+### Phase I: The Foundation (Legacy & Basics)
+*Establish the baseline Vulkan context and get geometry on the screen.*
 
-### Phase II: The GPU Driven Core
-- [ ] **Vertex Data**: Implementing **Pull-Mode Vertex Fetching** (SSBO replacement for VBOs).
-- [ ] **GPU Scene**: Uploading instance data (Transforms/MaterialIDs) to persistent GPU buffers.
-- [ ] **Culling**: Implementing Compute Shader-based **Frustum Culling**.
-- [ ] **MDI**: Integrating **Multi-Draw Indirect** for single-draw-call rendering.
-- [ ] **Async Compute**: Offloading culling tasks to a dedicated compute queue with ownership transfers.
+- [x] **Context Initialization**: Setup Instance, Physical Device, Logical Device, and Queue families.
+- [x] **Swapchain Architecture**: Implement Swapchain, Image Views, and Frame Presentation logic.
+- [ ] **Hello Triangle**: Render the first triangle using Legacy RenderPass/Framebuffer compatibility path.
+- [ ] **Basic RHI**: Abstract the main loop, implement Staging Buffers, and basic Camera (MVP) logic.
 
-### Phase III: Visuals & Engineering Polish
+### Phase II: RHI Modernization
+*Transition from legacy Vulkan 1.0 constructs to modern 1.3+ standards.*
+
+- [ ] **Dynamic Rendering**: Remove all `VkRenderPass` and `VkFramebuffer` objects; migrate to `VK_KHR_dynamic_rendering`.
+- [ ] **Synchronization 2**: Replace binary semaphores with **Timeline Semaphores** and implement `vkCmdPipelineBarrier2`.
+- [ ] **Imageless Framebuffers**: Implement fallback architecture for mobile tile-based rendering optimizations.
+- [ ] **RHI Abstraction layer**: Finalize the separation between high-level rendering logic and low-level Vulkan calls.
+
+### Phase III: The Bindless Revolution
+*Overhaul resource management to enable "Bindless" workflows.*
+
+- [ ] **Buffer Device Address (BDA)**: Implement `GpuPtr<T>` to access vertex/index buffers via physical GPU pointers.
+- [ ] **Bindless Textures**: Implement `descriptorIndexing` (UpdateAfterBind) for global texture arrays.
+- [ ] **Material System**: Design a Texture-ID based material system utilizing the bindless heap.
+- [ ] **Descriptor Buffers**: Integrate `VK_EXT_descriptor_buffer` for manual descriptor memory management.
+
+### Phase IV: Shader Infrastructure (Slang)
+*Integrate Slang language to manage complexity and compile times.*
+
+- [ ] **Graphics Pipeline Library (GPL)**: Implement fast pipeline linking to solve PSO compilation stuttering.
+- [ ] **Slang Integration**: Embed the Slang compiler and replace HLSL build chain.
+- [ ] **Modern Shader Interface**: Wrap BDA and Bindless resources into Slang `Parameter Blocks`.
+- [ ] **Shader Modularization**: Refactor core generic logic using Slang Interfaces (`IGeometry`, `IMaterial`).
+
+### Phase V: GPU-Driven Rendering
+*Move scene management and culling from CPU to GPU.*
+
+- [ ] **Indirect Drawing**: Implement `vkCmdDrawIndexedIndirect` with GPU-generated commands.
+- [ ] **Compute Culling (Basic)**: Implement Frustum Culling and Instance Culling using Compute Shaders.
+- [ ] **Two-Phase Culling**: Implement Hi-Z Occlusion Culling with temporal reprojection.
+- [ ] **Scene Management**: Support high-density instance rendering with GPU-side compaction.
+- [ ] **Performance Polish**: Final profiling (Nsight/RGP) and memory barrier tuning.
+
+### Phase X: Next-Gen Others
 - [ ] **Asset Pipeline**: Custom binary mesh loader.
 - [ ] **Visuals**: Disney PBR lighting & CSM with PCF & LUT based **Sky Atmosphere**.
 - [ ] **Profiling**: **ImGui** & **RenderDoc API**.
-
-### Phase IV: Next-Gen Geometry
 - [ ] **Mesh Shaders**: Hardware pipeline implementation.
 - [ ] **VisBuffer**: ID Buffer rendering & Material reconstruction.
 - [ ] **Software Rasterizer**: Compute Shader rasterizer (64-bit Atomics).
 - [ ] **Hybrid Pipeline**: Dynamic switching between HW/SW Rasterization.
 - [ ] **Streaming**: Error-metric based LOD selection (DAG).
-
-### Phase V: Global Illumination
 - [ ] **SDF**: Mesh Distance Field & Global Clipmap generation.
 - [ ] **SWRT**: Software Ray Tracing (Sphere Tracing).
 - [ ] **Radiance Cache**: Probe hierarchy update.
 - [ ] **Hybrid Shadows**: Blending CSM + SDF Shadows.
 - [ ] **RTX 40**: Integration of **SER** and **OMM**.
 - [ ] **Denoising**: Separate Temporal/Spatial filter chain.
-
-### Phase VI: Engineering
 - [ ] **Runtime Config**: Full ImGui-based feature toggling system.
 - [ ] **HDR**: 10-bit Output & Tone Mapping.
 - [ ] **DLSS 4**: Streamline SDK integration (SR + FG).

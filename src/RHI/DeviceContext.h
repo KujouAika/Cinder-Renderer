@@ -38,16 +38,18 @@ private:
     void TestVMA();
 
     void CreateRenderPass();
-    void CreateShaderModule(const std::vector<char>& code);
+    VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
     void CreatePipelineLayout();
+
+    void CreateGraphicsPipeline();
 
     FWindow& WindowRef;
 
     VkInstance Instance = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE; // 验证层
+    VkDebugUtilsMessengerEXT DebugMessenger = VK_NULL_HANDLE;
     VkSurfaceKHR Surface = VK_NULL_HANDLE;
-    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE; // 物理设备（不需要 Destroy）
-    VkDevice LogicalDevice = VK_NULL_HANDLE; // 逻辑设备
+    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+    VkDevice LogicalDevice = VK_NULL_HANDLE;
 
     FQueueFamilyIndices QueueIndices;
     VkQueue GraphicsQueue = VK_NULL_HANDLE;
@@ -59,6 +61,6 @@ private:
     std::unique_ptr<class FSwapchain> Swapchain;
 
     VkRenderPass RenderPass = VK_NULL_HANDLE;
-    VkShaderModule ShaderModule = VK_NULL_HANDLE;
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
+    VkPipeline GraphicsPipeline = VK_NULL_HANDLE;
 };

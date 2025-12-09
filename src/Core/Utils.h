@@ -1,22 +1,22 @@
 ﻿#pragma once
 #include <fstream>
+#include <filesystem>
 
 namespace Utils
 {
     // 读取二进制文件工具函数
-    inline std::vector<char> ReadFile(const std::string& filename)
+    inline std::vector<char> ReadSPV(const std::string& filename)
     {
-        // ate: 从末尾开始读(为了获取大小) | binary: 二进制模式
-        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+        std::filesystem::path rootPath = SHADER_ROOT;
+        std::filesystem::path fullPath = rootPath / filename;
+        std::ifstream file(fullPath, std::ios::ate | std::ios::binary);
 
-        if (!file.is_open())
-        {
-            throw std::runtime_error("Failed to open file: " + filename);
+        if (!file.is_open()) {
+            throw std::runtime_error("failed to open file: " + fullPath.string());
         }
 
         size_t fileSize = (size_t)file.tellg();
         std::vector<char> buffer(fileSize);
-
         file.seekg(0);
         file.read(buffer.data(), fileSize);
         file.close();
