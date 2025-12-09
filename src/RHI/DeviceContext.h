@@ -39,6 +39,8 @@ private:
 
     void CreateRenderPass();
 
+    VkShaderModule CreateShaderModule(const std::vector<char>& code);
+
     FWindow& WindowRef;
 
     VkInstance Instance = VK_NULL_HANDLE;

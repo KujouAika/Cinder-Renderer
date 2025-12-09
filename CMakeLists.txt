@@ -28,15 +28,49 @@ endif()
 file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK_PATH)
 
 
-# shader 编译函数 (保持不变)
-function(compile_shader SHADER_SOURCE SHADER_BINARY)
+# 尝试寻找 Vulkan SDK 里的 DXC
+find_program(DXC_EXECUTABLE dxc
+    HINTS "${VULKAN_SDK_PATH}/Bin"
+    DOC "Path to DirectX Shader Compiler"
+)
+
+
+if(NOT DXC_EXECUTABLE)
+    message(FATAL_ERROR "Could not find dxc.exe! Please install Vulkan SDK.")
+endif()
+
+
+# 定义一个宏，用于编译 HLSL 到 SPIR-V
+# 参数:
+#   SHADER_SOURCE: 源代码路径 (如 Shaders/Triangle.hlsl)
+#   PROFILE:       编译目标 (如 vs_6_0, ps_6_0)
+#   ENTRY_POINT:   入口函数 (如 VSMain)
+#   OUTPUT_SPV:    输出文件名 (如 Triangle.vert.spv)
+function(compile_shader SHADER_SOURCE PROFILE ENTRY_POINT OUTPUT_SPV)
+    # 定义输出文件的完整路径 (放到构建目录的 bin 下，或者和 exe 同级)
+    set(SPV_FILE "${CMAKE_BINARY_DIR}/${OUTPUT_SPV}")
+
+    # 添加自定义命令
     add_custom_command(
-        OUTPUT ${SHADER_BINARY}
-        COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${SHADER_SOURCE} -o ${SHADER_BINARY}
-        DEPENDS ${SHADER_SOURCE}
-        COMMENT "Compiling ${SHADER_SOURCE} to SPIR-V"
+        OUTPUT ${SPV_FILE}
+        COMMAND ${DXC_EXECUTABLE} -T ${PROFILE} -E ${ENTRY_POINT} -Fo ${SPV_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_SOURCE} -spirv
+        MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_SOURCE}
+        COMMENT "Compiling HLSL shader: ${SHADER_SOURCE} -> ${OUTPUT_SPV}"
     )
+
+    # 将生成的 .spv 文件添加到一个列表中，稍后用来创建 Target
+    list(APPEND ALL_GENERATED_SPV_FILES ${SPV_FILE})
+    # 因为是在函数里，需要将列表变量向上传递到父作用域
+    set(ALL_GENERATED_SPV_FILES ${ALL_GENERATED_SPV_FILES} PARENT_SCOPE)
 endfunction()
+
+compile_shader("Shaders/Triangle.hlsl" "vs_6_0" "VSMain" "Triangle.vert.spv")
+compile_shader("Shaders/Triangle.hlsl" "ps_6_0" "PSMain" "Triangle.frag.spv")
+
+# 创建一个自定义 Target 叫 "CompileShaders"
+# 这样 VS 解决方案里会多出一个项目，专门管 Shader 编译
+add_custom_target(CompileShaders ALL DEPENDS ${ALL_GENERATED_SPV_FILES})
+
 
 set(SRC_APP
     src/Application/Application.h
@@ -59,6 +93,7 @@ set(SRC_CORE
     src/Core/Macro.h
     src/Core/Common.h
     src/Core/Config.h
+    src/Core/Utils.h
 )
 
 add_executable(${PROJECT_NAME} 
@@ -68,6 +103,7 @@ add_executable(${PROJECT_NAME}
     ${SRC_CORE}
 )
 
+add_dependencies(${PROJECT_NAME} CompileShaders)
 
 target_include_directories(${PROJECT_NAME} PRIVATE 
     src
@@ -89,7 +125,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # REUSE_FROM: 如果有多个目标，可以复用 PCH
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     src/Core/Common.h
-    src/Core/Config.h
 )
 
 # 7. 预处理器定义

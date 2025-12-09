@@ -29,7 +29,7 @@ void FSwapchain::Create()
     }
 
     VkSwapchainCreateInfoKHR CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     CreateInfo.surface = DeviceContextRef.GetSurface();
 
     CreateInfo.minImageCount = ImageCount;
@@ -216,19 +216,19 @@ VkExtent2D FSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabili
 
 void FSwapchain::CreateImageViews()
 {
-    VkImageViewCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    createInfo.format = ImageFormat;
-    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    createInfo.subresourceRange.baseMipLevel = 0;
-    createInfo.subresourceRange.levelCount = 1;
-    createInfo.subresourceRange.baseArrayLayer = 0;
-    createInfo.subresourceRange.layerCount = 1;
+    VkImageViewCreateInfo CreateInfo{};
+    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    CreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    CreateInfo.format = ImageFormat;
+    CreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    CreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    CreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    CreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    CreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    CreateInfo.subresourceRange.baseMipLevel = 0;
+    CreateInfo.subresourceRange.levelCount = 1;
+    CreateInfo.subresourceRange.baseArrayLayer = 0;
+    CreateInfo.subresourceRange.layerCount = 1;
     
     // Deleter
     TVulkanHandle<VkImageView>::FDeleter ImageViewDeleter =
@@ -241,9 +241,9 @@ void FSwapchain::CreateImageViews()
 
     for (size_t i = 0; i < Images.size(); i++)
     {
-        createInfo.image = Images[i];
+        CreateInfo.image = Images[i];
         VkImageView imageViewHandle = VK_NULL_HANDLE;
-        if (vkCreateImageView(DeviceContextRef.GetLogicalDevice(), &createInfo, nullptr, &imageViewHandle) != VK_SUCCESS)
+        if (vkCreateImageView(DeviceContextRef.GetLogicalDevice(), &CreateInfo, nullptr, &imageViewHandle) != VK_SUCCESS)
         {
             throw std::runtime_error("failed to create image views!");
         }

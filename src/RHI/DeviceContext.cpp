@@ -55,8 +55,7 @@ namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，
 
     void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& InCreateInfo)
     {
-        InCreateInfo = {};
-        InCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        Utils::ZeroVulkanStruct(InCreateInfo, VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT);
         InCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -127,7 +126,7 @@ FDeviceContext::~FDeviceContext()
 void FDeviceContext::CreateInstance()
 {
     VkApplicationInfo AppInfo{};
-    AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    Utils::ZeroVulkanStruct(AppInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
     AppInfo.pApplicationName = APP_NAME;
     AppInfo.applicationVersion = APP_VERSION;
     AppInfo.pEngineName = ENGINE_NAME;
@@ -135,7 +134,7 @@ void FDeviceContext::CreateInstance()
     AppInfo.apiVersion = VK_API_VERSION;
 
     VkInstanceCreateInfo CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
     CreateInfo.pApplicationInfo = &AppInfo;
 
     auto Extensions = WindowRef.GetVulkanExtensions();
@@ -229,7 +228,7 @@ void FDeviceContext::CreateLogicalDevice()
     for (uint32_t QueueFamily : UniqueQueueFamilies)
     {
         VkDeviceQueueCreateInfo QueueCreateInfo{};
-        QueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        Utils::ZeroVulkanStruct(QueueCreateInfo, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
         QueueCreateInfo.queueFamilyIndex = QueueFamily;
         QueueCreateInfo.queueCount = 1; // 每个族我们只需要 1 个队列句柄
         QueueCreateInfo.pQueuePriorities = &QueuePriority;
@@ -242,7 +241,7 @@ void FDeviceContext::CreateLogicalDevice()
     DeviceFeatures.geometryShader = VK_TRUE;
 
     VkDeviceCreateInfo CreateInfo{};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
     CreateInfo.queueCreateInfoCount = static_cast<uint32_t>(QueueCreateInfos.size());
     CreateInfo.pQueueCreateInfos = QueueCreateInfos.data();
     CreateInfo.pEnabledFeatures = &DeviceFeatures;
@@ -251,7 +250,7 @@ void FDeviceContext::CreateLogicalDevice()
     CreateInfo.ppEnabledExtensionNames = DeviceExtensions.data();
 
     VkPhysicalDeviceVulkan12Features vulkan12Features{};
-    vulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    Utils::ZeroVulkanStruct(vulkan12Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
     vulkan12Features.bufferDeviceAddress = VK_TRUE; // BDA
     vulkan12Features.descriptorIndexing = VK_TRUE; // Bindless
 
@@ -283,14 +282,13 @@ void FDeviceContext::CreateAllocator()
     }
 
     std::cout << "VMA Initialized Successfully." << std::endl;
-    TestVMA();
 }
 
 void FDeviceContext::TestVMA()
 {
     // 1. 定义 Buffer 信息 (创建一个 1KB 的顶点缓冲区)
     VkBufferCreateInfo bufferInfo {};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    Utils::ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
     bufferInfo.size = 1024; // 1KB
     bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
@@ -346,7 +344,7 @@ void FDeviceContext::CreateRenderPass()
     subpass.pColorAttachments = &colorAttachmentRef;
 
     VkRenderPassCreateInfo CreateInfo {};
-    CreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
     CreateInfo.attachmentCount = 1;
     CreateInfo.pAttachments = &colorAttachment;
     CreateInfo.dependencyCount = 1;
@@ -358,4 +356,20 @@ void FDeviceContext::CreateRenderPass()
     {
         throw std::runtime_error("failed to create render pass!");
     }
+}
+
+VkShaderModule FDeviceContext::CreateShaderModule(const std::vector<char>& code)
+{
+    VkShaderModuleCreateInfo createInfo{};
+    Utils::ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule shaderModule;
+    if (vkCreateShaderModule(LogicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create shader module!");
+    }
+
+    return shaderModule;
 }
