@@ -38,8 +38,8 @@ private:
     void TestVMA();
 
     void CreateRenderPass();
-
-    VkShaderModule CreateShaderModule(const std::vector<char>& code);
+    void CreateShaderModule(const std::vector<char>& code);
+    void CreatePipelineLayout();
 
     FWindow& WindowRef;
 
@@ -59,4 +59,6 @@ private:
     std::unique_ptr<class FSwapchain> Swapchain;
 
     VkRenderPass RenderPass = VK_NULL_HANDLE;
+    VkShaderModule ShaderModule = VK_NULL_HANDLE;
+    VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 };
