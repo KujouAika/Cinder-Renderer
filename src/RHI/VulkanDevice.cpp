@@ -1,7 +1,7 @@
 ﻿#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
-#include "Swapchain.h"
-#include "DeviceContext.h"
+#include "VulkanSwapchain.h"
+#include "VulkanDevice.h"
 #include "DeviceSelector.h"
 
 namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，只在当前文件可见
@@ -67,9 +67,9 @@ namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，
     }
 }
 
-FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj) {}
+FVulkanDevice::FVulkanDevice(FWindow& WindowObj) : WindowRef(WindowObj) {}
 
-void FDeviceContext::Init()
+void FVulkanDevice::Init()
 {
     CreateInstance();
     SetupDebugMessenger();
@@ -79,7 +79,7 @@ void FDeviceContext::Init()
 
     CreateAllocator();
 
-    Swapchain = std::make_unique<FSwapchain>(*this, WindowRef);
+    Swapchain = std::make_unique<FVulkanSwapchain>(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT, *this, WindowRef);
 
     CreatePipelineLayout();
     CreateGraphicsPipeline();
@@ -89,13 +89,13 @@ void FDeviceContext::Init()
     CreateSyncObjects();
 }
 
-void FDeviceContext::RecreateSwapchain()
+void FVulkanDevice::RecreateSwapchain()
 {
     vkDeviceWaitIdle(LogicalDevice);
-    Swapchain->Recreate();
+    Swapchain->Create(WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT);
 }
 
-FDeviceContext::~FDeviceContext()
+FVulkanDevice::~FVulkanDevice()
 {
     if (LogicalDevice != VK_NULL_HANDLE)
     {
@@ -161,7 +161,7 @@ FDeviceContext::~FDeviceContext()
     vkDestroyInstance(Instance, nullptr);
 }
 
-void FDeviceContext::CreateInstance()
+void FVulkanDevice::CreateInstance()
 {
     VkApplicationInfo AppInfo{};
     Utils::ZeroVulkanStruct(AppInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
@@ -205,7 +205,7 @@ void FDeviceContext::CreateInstance()
     std::cout << "Vulkan Instance created successfully!" << std::endl;
 }
 
-void FDeviceContext::SetupDebugMessenger()
+void FVulkanDevice::SetupDebugMessenger()
 {
     if (!bEnableValidationLayers) return;
 
@@ -219,7 +219,7 @@ void FDeviceContext::SetupDebugMessenger()
     }
 }
 
-void FDeviceContext::CreateSurface()
+void FVulkanDevice::CreateSurface()
 {
     // SDL_Vulkan_CreateSurface 需要 SDL_Window* 指针
     if (!SDL_Vulkan_CreateSurface(WindowRef.GetNativeWindow(), Instance, &Surface))
@@ -228,7 +228,7 @@ void FDeviceContext::CreateSurface()
     }
 }
 
-void FDeviceContext::PickPhysicalDevice()
+void FVulkanDevice::PickPhysicalDevice()
 {
     FSelectionResult Result = FDeviceSelector::Select(Instance, Surface);
     PhysicalDevice = Result.PhysicalDevice;
@@ -252,7 +252,7 @@ void FDeviceContext::PickPhysicalDevice()
     }
 }
 
-void FDeviceContext::CreateLogicalDevice()
+void FVulkanDevice::CreateLogicalDevice()
 {
     std::vector<VkDeviceQueueCreateInfo> QueueCreateInfos;
     float QueuePriority = 1.0f;
@@ -318,7 +318,7 @@ void FDeviceContext::CreateLogicalDevice()
     vkGetDeviceQueue(LogicalDevice, QueueIndices.ComputeFamily.value(), 0, &ComputeQueue);
 }
 
-void FDeviceContext::CreateAllocator()
+void FVulkanDevice::CreateAllocator()
 {
     VmaAllocatorCreateInfo AllocatorInfo{};
 
@@ -337,7 +337,7 @@ void FDeviceContext::CreateAllocator()
     std::cout << "VMA Initialized Successfully." << std::endl;
 }
 
-void FDeviceContext::TestVMA()
+void FVulkanDevice::TestVMA()
 {
     // 1. 定义 Buffer 信息 (创建一个 1KB 的顶点缓冲区)
     VkBufferCreateInfo bufferInfo {};
@@ -367,51 +367,7 @@ void FDeviceContext::TestVMA()
     }
 }
 
-//void FDeviceContext::CreateRenderPass()
-//{
-//    VkAttachmentDescription colorAttachment{};
-//    colorAttachment.format = Swapchain->GetImageFormat();
-//    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-//    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-//    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-//    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-//    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-//    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-//    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-//
-//    VkSubpassDependency dependency{};
-//    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-//    dependency.dstSubpass = 0;
-//    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-//    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-//    dependency.srcAccessMask = 0;
-//    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-//    dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-//
-//    VkAttachmentReference colorAttachmentRef{};
-//    colorAttachmentRef.attachment = 0;
-//    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-//    VkSubpassDescription subpass{};
-//    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-//    subpass.colorAttachmentCount = 1;
-//    subpass.pColorAttachments = &colorAttachmentRef;
-//
-//    VkRenderPassCreateInfo CreateInfo {};
-//    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-//    CreateInfo.attachmentCount = 1;
-//    CreateInfo.pAttachments = &colorAttachment;
-//    CreateInfo.dependencyCount = 1;
-//    CreateInfo.pDependencies = &dependency;
-//    CreateInfo.subpassCount = 1;
-//    CreateInfo.pSubpasses = &subpass;
-//
-//    if (vkCreateRenderPass(LogicalDevice, &CreateInfo, nullptr, &RenderPass) != VK_SUCCESS)
-//    {
-//        throw std::runtime_error("failed to create render pass!");
-//    }
-//}
-
-VkShaderModule FDeviceContext::CreateShaderModule(const std::vector<char>& InCode) const
+VkShaderModule FVulkanDevice::CreateShaderModule(const std::vector<char>& InCode) const
 {
     VkShaderModuleCreateInfo CreateInfo{};
     Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
@@ -426,7 +382,7 @@ VkShaderModule FDeviceContext::CreateShaderModule(const std::vector<char>& InCod
     return ShaderModule;
 }
 
-void FDeviceContext::CreatePipelineLayout()
+void FVulkanDevice::CreatePipelineLayout()
 {
     VkPipelineLayoutCreateInfo PipelineLayoutInfo{};
     Utils::ZeroVulkanStruct(PipelineLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
@@ -440,7 +396,7 @@ void FDeviceContext::CreatePipelineLayout()
     }
 }
 
-void FDeviceContext::CreateGraphicsPipeline()
+void FVulkanDevice::CreateGraphicsPipeline()
 {
     VkPipelineShaderStageCreateInfo VertexShaderStageInfo{};
     Utils::ZeroVulkanStruct(VertexShaderStageInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
@@ -512,7 +468,7 @@ void FDeviceContext::CreateGraphicsPipeline()
     DynamicState.pDynamicStates = dynamicStates.data();
     VkPipelineShaderStageCreateInfo shaderStages[] = { VertexShaderStageInfo, FragmentShaderStageInfo };
 
-    VkFormat colorAttachmentFormat = Swapchain->GetImageFormat();
+    VkFormat colorAttachmentFormat = Swapchain->GetVkFormat();
     VkFormat depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
     VkPipelineRenderingCreateInfo pipelineRenderingInfo{};
     Utils::ZeroVulkanStruct(pipelineRenderingInfo, VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO);
@@ -546,7 +502,7 @@ void FDeviceContext::CreateGraphicsPipeline()
     vkDestroyShaderModule(LogicalDevice, fragmentShaderModule, nullptr);
 }
 
-void FDeviceContext::CreateCommandPool()
+void FVulkanDevice::CreateCommandPool()
 {
     VkCommandPoolCreateInfo PoolInfo{};
     Utils::ZeroVulkanStruct(PoolInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
@@ -558,7 +514,7 @@ void FDeviceContext::CreateCommandPool()
     }
 }
 
-void FDeviceContext::CreateCommandBuffers()
+void FVulkanDevice::CreateCommandBuffers()
 {
     CommandBuffers.resize(Swapchain->GetImages().size());
     VkCommandBufferAllocateInfo AllocInfo{};
@@ -572,7 +528,7 @@ void FDeviceContext::CreateCommandBuffers()
     }
 }
 
-void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint32_t InImageIndex)
+void FVulkanDevice::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint32_t InImageIndex)
 {
     VkCommandBufferBeginInfo BeginInfo{};
     Utils::ZeroVulkanStruct(BeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -617,7 +573,7 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
     VkRenderingInfo RenderingInfo{};
     Utils::ZeroVulkanStruct(RenderingInfo, VK_STRUCTURE_TYPE_RENDERING_INFO);
     RenderingInfo.renderArea.offset = { 0, 0 };
-    RenderingInfo.renderArea.extent = Swapchain->GetExtent();
+    RenderingInfo.renderArea.extent = Swapchain->GetVkExtent();
     RenderingInfo.layerCount = 1;
     RenderingInfo.colorAttachmentCount = 1;
     RenderingInfo.pColorAttachments = &ColorAttachment;
@@ -628,15 +584,15 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
     VkViewport Viewport{};
     Viewport.x = 0.0f;
     Viewport.y = 0.0f;
-    Viewport.width = static_cast<float>(Swapchain->GetExtent().width);
-    Viewport.height = static_cast<float>(Swapchain->GetExtent().height);
+    Viewport.width = static_cast<float>(Swapchain->GetVkExtent().width);
+    Viewport.height = static_cast<float>(Swapchain->GetVkExtent().height);
     Viewport.minDepth = 0.0f;
     Viewport.maxDepth = 1.0f;
     vkCmdSetViewport(InCommandBuffer, 0, 1, &Viewport);
 
     VkRect2D Scissor{};
     Scissor.offset = { 0, 0 };
-    Scissor.extent = Swapchain->GetExtent();
+    Scissor.extent = Swapchain->GetVkExtent();
     vkCmdSetScissor(InCommandBuffer, 0, 1, &Scissor);
     
     vkCmdDraw(InCommandBuffer, 3, 1, 0, 0);
@@ -661,7 +617,7 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
     }
 }
 
-void FDeviceContext::CreateSyncObjects()
+void FVulkanDevice::CreateSyncObjects()
 {
     ImageAvailableSemaphores.clear();
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -702,7 +658,7 @@ void FDeviceContext::CreateSyncObjects()
     }
 }
 
-bool FDeviceContext::RenderFrame()
+bool FVulkanDevice::RenderFrame()
 {
     uint64_t WaitValue = 0;
     if (CurrentCpuFrame >= MAX_FRAMES_IN_FLIGHT) {

@@ -25,7 +25,7 @@ FApplication::~FApplication()
 void FApplication::Init()
 {
     AppWindow = std::make_unique<FWindow>("Vulkan Renderer", 800, 600);
-    Context = std::make_unique<FDeviceContext>(*AppWindow);
+    Context = std::make_unique<FVulkanDevice>(*AppWindow);
     Context->Init();
 }
 

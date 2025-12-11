@@ -82,12 +82,14 @@ set(SRC_APP
 )
 
 set(SRC_RHI
-    src/RHI/DeviceContext.h
-    src/RHI/DeviceContext.cpp
-    src/RHI/Swapchain.h
-    src/RHI/Swapchain.cpp
+    src/RHI/VulkanDevice.h
+    src/RHI/VulkanDevice.cpp
+    src/RHI/VulkanSwapchain.h
+    src/RHI/VulkanSwapchain.cpp
     src/RHI/DeviceSelector.h
     src/RHI/DeviceSelector.cpp
+    src/RHI/RHIDevice.h
+    src/RHI/RHISwapchain.h
 )
 
 set(SRC_CORE

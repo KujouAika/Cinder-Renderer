@@ -18,5 +18,24 @@ constexpr uint32_t APP_VERSION = VK_MAKE_VERSION(2, 5, 0);
 constexpr const char* ENGINE_NAME = "Cinder Engine";
 constexpr uint32_t ENGINE_VERSION = VK_MAKE_VERSION(16, 0, 0);
 
-// 最大同时帧数 (Frames In Flight)
+// RHI Config
 const int MAX_FRAMES_IN_FLIGHT = 2;
+
+const int WINDOW_DEFAULT_WIDTH = 800;
+const int WINDOW_DEFAULT_HEIGHT = 600;
+
+enum class RHIBackend {
+    Vulkan,
+    DirectX12,
+    Metal
+};
+
+enum class RHIFormat {
+    R8G8B8A8_UNORM,
+    B8G8R8A8_UNORM,
+};
+
+struct RHIExtent2D {
+    uint32_t width;
+    uint32_t height;
+};

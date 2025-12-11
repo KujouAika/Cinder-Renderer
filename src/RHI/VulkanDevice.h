@@ -2,13 +2,14 @@
 #include "DeviceSelector.h"
 #include "Window.h"
 #include "vk_mem_alloc.h"
-#include "Swapchain.h"
+#include "VulkanSwapchain.h"
+#include "RHI/RHIDevice.h"
 
-class FDeviceContext
+class FVulkanDevice: public FRHIDevice
 {
 public:
-    FDeviceContext(FWindow& WindowObj);
-    ~FDeviceContext();
+    FVulkanDevice(FWindow& WindowObj);
+    ~FVulkanDevice();
 
     VkPhysicalDevice GetPhysicalDevice() const { check(PhysicalDevice != VK_NULL_HANDLE); return PhysicalDevice; }
     VkDevice GetLogicalDevice() const { check(LogicalDevice != VK_NULL_HANDLE); return LogicalDevice; }
@@ -20,15 +21,11 @@ public:
     VkQueue GetComputeQueue() const { check(ComputeQueue != VK_NULL_HANDLE); return ComputeQueue; }
 
     VkSurfaceKHR GetSurface() const { check(Surface != VK_NULL_HANDLE); return Surface; }
-
     FQueueFamilyIndices GetQueueFamilyIndices() const { return QueueIndices; }
-
-    FSwapchain& GetSwapchain() const { check(Swapchain); return *Swapchain; }
+    FVulkanSwapchain& GetSwapchain() const { check(Swapchain); return *Swapchain; }
 
     void Init();
-
     void RecreateSwapchain();
-
     bool RenderFrame();
 
 private:
@@ -67,7 +64,7 @@ private:
 
     VmaAllocator Allocator = VK_NULL_HANDLE;
 
-    std::unique_ptr<class FSwapchain> Swapchain;
+    std::unique_ptr<class FVulkanSwapchain> Swapchain;
 
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline GraphicsPipeline = VK_NULL_HANDLE;

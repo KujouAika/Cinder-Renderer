@@ -1,27 +1,43 @@
-﻿#include "Swapchain.h"
-#include "DeviceContext.h"
+﻿#include "VulkanSwapchain.h"
+#include "VulkanDevice.h"
 #include "Application/Window.h"
 
-FSwapchain::FSwapchain(FDeviceContext& InDeviceContext, FWindow& InWindow)
-    : DeviceContextRef(InDeviceContext), WindowRef(InWindow)
+FVulkanSwapchain::FVulkanSwapchain(const uint32_t& InWidth, const uint32_t& InHeight, FVulkanDevice& InDevice, FWindow& InWindow): DeviceRef(InDevice), WindowRef(InWindow)
 {
-    Create();
-    CreateImageViews();
+    Create(InWidth, InHeight);
 }
 
-FSwapchain::~FSwapchain()
+FVulkanSwapchain::~FVulkanSwapchain()
 {
     Cleanup();
 }
 
-void FSwapchain::Create()
+void FVulkanSwapchain::Resize(const uint32_t& Width, const uint32_t& Height)
 {
-    SupportDetails = QuerySwapChainSupport(DeviceContextRef.GetPhysicalDevice(), DeviceContextRef.GetSurface());
+    Create(Width, Height);
+}
+
+bool FVulkanSwapchain::GetNextImage(uint32_t& OutImageIndex, void* InSignalSemaphore)
+{
+    VkSemaphore sem = static_cast<VkSemaphore>(InSignalSemaphore);
+
+    VkResult result = vkAcquireNextImageKHR(LogicalDevice, Swapchain, UINT64_MAX, sem, VK_NULL_HANDLE, &OutImageIndex);
+
+    return result != VK_ERROR_OUT_OF_DATE_KHR;
+}
+
+bool FVulkanSwapchain::Present(uint32_t ImageIndex, void* InWaitSemaphore)
+{
+    return false;
+}
+
+void FVulkanSwapchain::Create(const uint32_t& Width, const uint32_t& Height)
+{
+    FSwapchainSupportDetails SupportDetails = QuerySwapChainSupport(DeviceRef.GetPhysicalDevice(), DeviceRef.GetSurface());
     VkSurfaceFormatKHR SurfaceFormat = ChooseSwapSurfaceFormat(SupportDetails.Formats);
     VkPresentModeKHR PresentMode = ChooseSwapPresentMode(SupportDetails.PresentModes);
-    VkExtent2D SwapchainExtent = ChooseSwapExtent(SupportDetails.Capabilities, WindowRef);
+    VkExtent2D SwapchainExtent = ChooseSwapExtent(SupportDetails.Capabilities, WindowRef, Width, Height);
 
-    // + 1 防止驱动程序在等待 VSync 时阻塞 CPU
     uint32_t ImageCount = SupportDetails.Capabilities.minImageCount + 1;
 
     if (SupportDetails.Capabilities.maxImageCount > 0 && ImageCount > SupportDetails.Capabilities.maxImageCount)
@@ -31,7 +47,7 @@ void FSwapchain::Create()
 
     VkSwapchainCreateInfoKHR CreateInfo{};
     Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-    CreateInfo.surface = DeviceContextRef.GetSurface();
+    CreateInfo.surface = DeviceRef.GetSurface();
 
     CreateInfo.minImageCount = ImageCount;
     CreateInfo.imageFormat = SurfaceFormat.format;
@@ -41,7 +57,7 @@ void FSwapchain::Create()
     CreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     CreateInfo.imageUsage |= VK_IMAGE_USAGE_SAMPLED_BIT;
 
-    FQueueFamilyIndices Indices = DeviceContextRef.GetQueueFamilyIndices();
+    FQueueFamilyIndices Indices = DeviceRef.GetQueueFamilyIndices();
     uint32_t QueueFamilyIndices[] = { Indices.GraphicsFamily.value(), Indices.PresentFamily.value() };
 
     if (Indices.GraphicsFamily != Indices.PresentFamily)
@@ -73,53 +89,75 @@ void FSwapchain::Create()
         CreateInfo.oldSwapchain = Swapchain;
     }
     
-    if (vkCreateSwapchainKHR(DeviceContextRef.GetLogicalDevice(), &CreateInfo, nullptr, &NewSwapchain) != VK_SUCCESS)
+    if (vkCreateSwapchainKHR(DeviceRef.GetLogicalDevice(), &CreateInfo, nullptr, &NewSwapchain) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create swap chain!");
     }
     Swapchain = NewSwapchain;
     if (OldSwapchain != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(DeviceContextRef.GetLogicalDevice(), OldSwapchain, nullptr);
+        vkDestroySwapchainKHR(DeviceRef.GetLogicalDevice(), OldSwapchain, nullptr);
     }
     
     ImageFormat = SurfaceFormat.format;
     Extent = SwapchainExtent;
 
-    vkGetSwapchainImagesKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, &ImageCount, nullptr);
+    vkGetSwapchainImagesKHR(DeviceRef.GetLogicalDevice(), Swapchain, &ImageCount, nullptr);
     Images.resize(ImageCount);
-    vkGetSwapchainImagesKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, &ImageCount, Images.data());
+    vkGetSwapchainImagesKHR(DeviceRef.GetLogicalDevice(), Swapchain, &ImageCount, Images.data());
 
     std::cout << "Swapchain created successfully!" << std::endl;
     std::cout << "  - Format: " << ImageFormat << std::endl;
     std::cout << "  - Extent: " << Extent.width << "x" << Extent.height << std::endl;
     std::cout << "  - Image Count: " << Images.size() << std::endl;
+
+    VkImageViewCreateInfo ImageViewCreateInfo{};
+    Utils::ZeroVulkanStruct(ImageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    ImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    ImageViewCreateInfo.format = ImageFormat;
+    ImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    ImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    ImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    ImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    ImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    ImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    ImageViewCreateInfo.subresourceRange.levelCount = 1;
+    ImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    ImageViewCreateInfo.subresourceRange.layerCount = 1;
+
+    // Deleter
+    TVulkanHandle<VkImageView>::FDeleter ImageViewDeleter =
+        [](VkDevice InDevice, VkImageView InImageView, const VkAllocationCallbacks* pAllocator)
+        {
+            vkDestroyImageView(InDevice, InImageView, pAllocator);
+        };
+
+    ImageViews.clear();
+
+    for (size_t i = 0; i < Images.size(); i++)
+    {
+        ImageViewCreateInfo.image = Images[i];
+        VkImageView imageViewHandle = VK_NULL_HANDLE;
+        if (vkCreateImageView(DeviceRef.GetLogicalDevice(), &ImageViewCreateInfo, nullptr, &imageViewHandle) != VK_SUCCESS)
+        {
+            throw std::runtime_error("failed to create image views!");
+        }
+        ImageViews.emplace_back(DeviceRef.GetLogicalDevice(), imageViewHandle, ImageViewDeleter);
+    }
 }
 
-void FSwapchain::Cleanup()
+void FVulkanSwapchain::Cleanup()
 {
     ImageViews.clear();
     
     if (Swapchain != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(DeviceContextRef.GetLogicalDevice(), Swapchain, nullptr);
+        vkDestroySwapchainKHR(DeviceRef.GetLogicalDevice(), Swapchain, nullptr);
         Swapchain = VK_NULL_HANDLE;
     }
 }
 
-void FSwapchain::Recreate()
-{
-    Create();
-    CreateImageViews();
-
-    for (size_t i = 0; i < ImageViews.size(); i++)
-    {
-        check(ImageViews[i].Get() != VK_NULL_HANDLE);
-    }
-    std::cout << "[Test] All " << ImageViews.size() << " ImageViews created successfully." << std::endl;
-}
-
-FSwapchainSupportDetails FSwapchain::QuerySwapChainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
+FSwapchainSupportDetails FVulkanSwapchain::QuerySwapChainSupport(VkPhysicalDevice PhysicalDevice, VkSurfaceKHR Surface)
 {
     FSwapchainSupportDetails Details;
 
@@ -149,7 +187,7 @@ FSwapchainSupportDetails FSwapchain::QuerySwapChainSupport(VkPhysicalDevice Phys
     return Details;
 }
 
-VkSurfaceFormatKHR FSwapchain::ChooseSwapSurfaceFormat(std::span<const VkSurfaceFormatKHR> AvailableFormats)
+VkSurfaceFormatKHR FVulkanSwapchain::ChooseSwapSurfaceFormat(std::span<const VkSurfaceFormatKHR> AvailableFormats)
 {
     // 优先寻找：B8G8R8A8_SRGB + SRGB_NONLINEAR
     // SRGB 格式能让 GPU 自动进行线性空间到 SRGB 的 Gamma 校正，这是 PBR 渲染的基础。
@@ -169,7 +207,7 @@ VkSurfaceFormatKHR FSwapchain::ChooseSwapSurfaceFormat(std::span<const VkSurface
     return AvailableFormats[0];
 }
 
-VkPresentModeKHR FSwapchain::ChooseSwapPresentMode(std::span<const VkPresentModeKHR> AvailablePresentModes)
+VkPresentModeKHR FVulkanSwapchain::ChooseSwapPresentMode(std::span<const VkPresentModeKHR> AvailablePresentModes)
 {
     // [Senior Strategy]
     // 1. Mailbox (三缓冲): 显卡一直画，把最新的一帧给屏幕。延迟低，无撕裂。
@@ -188,7 +226,7 @@ VkPresentModeKHR FSwapchain::ChooseSwapPresentMode(std::span<const VkPresentMode
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D FSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabilities, FWindow& Window)
+VkExtent2D FVulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabilities, FWindow& Window, const int& InWidth, const int& InHeight)
 {
     // 如果 currentExtent.width 不是最大值，说明窗口系统已经定死了分辨率（通常如此）
     if (Capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
@@ -197,14 +235,9 @@ VkExtent2D FSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabili
     }
     else
     {
-        // 如果是最大值，说明允许我们自己定（比如高 DPI 屏幕）
-        // 这里需要从 SDL 获取实际像素大小 (Drawable Size)
-        int Width, Height;
-        SDL_Vulkan_GetDrawableSize(Window.GetNativeWindow(), &Width, &Height);
-
         VkExtent2D ActualExtent = {
-            static_cast<uint32_t>(Width),
-            static_cast<uint32_t>(Height)
+            static_cast<uint32_t>(InWidth),
+            static_cast<uint32_t>(InHeight)
         };
 
         // 夹紧在 min 和 max 之间
@@ -212,42 +245,5 @@ VkExtent2D FSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& Capabili
         ActualExtent.height = std::clamp(ActualExtent.height, Capabilities.minImageExtent.height, Capabilities.maxImageExtent.height);
 
         return ActualExtent;
-    }
-}
-
-void FSwapchain::CreateImageViews()
-{
-    VkImageViewCreateInfo CreateInfo{};
-    Utils::ZeroVulkanStruct(CreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-    CreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    CreateInfo.format = ImageFormat;
-    CreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    CreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    CreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    CreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    CreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    CreateInfo.subresourceRange.baseMipLevel = 0;
-    CreateInfo.subresourceRange.levelCount = 1;
-    CreateInfo.subresourceRange.baseArrayLayer = 0;
-    CreateInfo.subresourceRange.layerCount = 1;
-    
-    // Deleter
-    TVulkanHandle<VkImageView>::FDeleter ImageViewDeleter =
-        [](VkDevice InDevice, VkImageView InImageView, const VkAllocationCallbacks* pAllocator)
-        {
-            vkDestroyImageView(InDevice, InImageView, pAllocator);
-        };
-
-    ImageViews.clear();
-
-    for (size_t i = 0; i < Images.size(); i++)
-    {
-        CreateInfo.image = Images[i];
-        VkImageView imageViewHandle = VK_NULL_HANDLE;
-        if (vkCreateImageView(DeviceContextRef.GetLogicalDevice(), &CreateInfo, nullptr, &imageViewHandle) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create image views!");
-        }
-        ImageViews.emplace_back(DeviceContextRef.GetLogicalDevice(), imageViewHandle, ImageViewDeleter);
     }
 }
