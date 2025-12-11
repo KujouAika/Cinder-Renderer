@@ -25,8 +25,6 @@ public:
 
     FSwapchain& GetSwapchain() const { check(Swapchain); return *Swapchain; }
 
-    VkRenderPass GetRenderPass() const { check(RenderPass); return RenderPass; }
-
     void Init();
 
     void RecreateSwapchain();
@@ -43,13 +41,11 @@ private:
     void CreateAllocator();
     void TestVMA();
 
-    void CreateRenderPass();
     VkShaderModule CreateShaderModule(const std::vector<char>& InCode) const;
     void CreatePipelineLayout();
 
     void CreateGraphicsPipeline();
 
-    void CreateFramebuffers();
     void CreateCommandPool();
     void CreateCommandBuffers();
 
@@ -73,11 +69,8 @@ private:
 
     std::unique_ptr<class FSwapchain> Swapchain;
 
-    VkRenderPass RenderPass = VK_NULL_HANDLE;
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline GraphicsPipeline = VK_NULL_HANDLE;
-
-    std::vector<VkFramebuffer> SwapchainFramebuffers;
     VkCommandPool CommandPool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> CommandBuffers;
 
