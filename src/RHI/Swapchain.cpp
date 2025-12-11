@@ -6,6 +6,7 @@ FSwapchain::FSwapchain(FDeviceContext& InDeviceContext, FWindow& InWindow)
     : DeviceContextRef(InDeviceContext), WindowRef(InWindow)
 {
     Create();
+    CreateImageViews();
 }
 
 FSwapchain::~FSwapchain()

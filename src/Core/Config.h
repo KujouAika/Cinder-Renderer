@@ -17,3 +17,6 @@ constexpr const char* APP_NAME = "Cinder Renderer";
 constexpr uint32_t APP_VERSION = VK_MAKE_VERSION(2, 5, 0);
 constexpr const char* ENGINE_NAME = "Cinder Engine";
 constexpr uint32_t ENGINE_VERSION = VK_MAKE_VERSION(16, 0, 0);
+
+// 最大同时帧数 (Frames In Flight)
+const int MAX_FRAMES_IN_FLIGHT = 2;

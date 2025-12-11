@@ -10,9 +10,6 @@ FApplication::FApplication()
     {
         throw std::runtime_error("Failed to initialize SDL: " + std::string(SDL_GetError()));
     }
-
-    AppWindow = std::make_unique<FWindow>("Vulkan Renderer", 800, 600);
-    Context = std::make_unique<FDeviceContext>(*AppWindow);
 }
 
 FApplication::~FApplication()
@@ -23,6 +20,13 @@ FApplication::~FApplication()
 
     SDL_Quit();
     std::cout << "SDL Shutdown successfully." << std::endl;
+}
+
+void FApplication::Init()
+{
+    AppWindow = std::make_unique<FWindow>("Vulkan Renderer", 800, 600);
+    Context = std::make_unique<FDeviceContext>(*AppWindow);
+    Context->Init();
 }
 
 void FApplication::Run()
@@ -66,7 +70,7 @@ void FApplication::Run()
                 AppWindow->GetSize(width, height);
             }
             std::cout << "[Test] Triggering Swapchain Recreation..." << std::endl;
-            Context->GetSwapchain().Recreate();
+            Context->RecreateSwapchain();
             bFramebufferResized = false;
             std::cout << "[Test] Swapchain Recreated." << std::endl;
 
@@ -76,8 +80,14 @@ void FApplication::Run()
 
         try
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
-            // Context->RenderFrame(&bFramebufferResized);
+            // std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            bool bRenderSuccess = Context->RenderFrame();
+
+            if (!bRenderSuccess) {
+                std::cout << "[Vulkan] Driver requested swapchain recreation." << std::endl;
+                // 将标志位置为 true，下一次 while 循环开头就会触发重建逻辑
+                bFramebufferResized = true;
+            }
         }
         catch (const std::exception& e)
         {

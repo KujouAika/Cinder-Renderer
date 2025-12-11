@@ -27,6 +27,12 @@ public:
 
     VkRenderPass GetRenderPass() const { check(RenderPass); return RenderPass; }
 
+    void Init();
+
+    void RecreateSwapchain();
+
+    bool RenderFrame();
+
 private:
     void CreateInstance();
     void SetupDebugMessenger();
@@ -38,10 +44,17 @@ private:
     void TestVMA();
 
     void CreateRenderPass();
-    VkShaderModule CreateShaderModule(const std::vector<char>& code) const;
+    VkShaderModule CreateShaderModule(const std::vector<char>& InCode) const;
     void CreatePipelineLayout();
 
     void CreateGraphicsPipeline();
+
+    void CreateFramebuffers();
+    void CreateCommandPool();
+    void CreateCommandBuffers();
+
+    void RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint32_t InImageIndex);
+    void CreateSyncObjects();
 
     FWindow& WindowRef;
 
@@ -63,4 +76,14 @@ private:
     VkRenderPass RenderPass = VK_NULL_HANDLE;
     VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
     VkPipeline GraphicsPipeline = VK_NULL_HANDLE;
+
+    std::vector<VkFramebuffer> SwapchainFramebuffers;
+    VkCommandPool CommandPool = VK_NULL_HANDLE;
+    std::vector<VkCommandBuffer> CommandBuffers;
+
+    std::vector<VkSemaphore> ImageAvailableSemaphores;
+    std::vector<VkSemaphore> RenderFinishedSemaphores;
+    std::vector<VkFence> InFlightFences;
+
+    int CurrentFrame = 0;
 };

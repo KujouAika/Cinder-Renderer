@@ -8,6 +8,8 @@ public:
     FApplication();
     ~FApplication();
 
+    void Init();
+
     void Run(); // 主循环：处理事件 -> 渲染
 
 private:

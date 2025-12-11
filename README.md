@@ -16,7 +16,7 @@ Experiments with Vulkan1.3.
 
 - [x] **Context Initialization**: Setup Instance, Physical Device, Logical Device, and Queue families.
 - [x] **Swapchain Architecture**: Implement Swapchain, Image Views, and Frame Presentation logic.
-- [ ] **Hello Triangle**: Render the first triangle using Legacy RenderPass/Framebuffer compatibility path.
+- [x] **Hello Triangle**: Render the first triangle using Legacy RenderPass/Framebuffer compatibility path.
 - [ ] **Basic RHI**: Abstract the main loop, implement Staging Buffers, and basic Camera (MVP) logic.
 
 ### Phase II: RHI Modernization
