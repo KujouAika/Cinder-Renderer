@@ -86,8 +86,8 @@ set(SRC_RHI
     src/RHI/VulkanDevice.cpp
     src/RHI/VulkanSwapchain.h
     src/RHI/VulkanSwapchain.cpp
-    src/RHI/DeviceSelector.h
-    src/RHI/DeviceSelector.cpp
+    
+    
     src/RHI/RHIDevice.h
     src/RHI/RHISwapchain.h
 )

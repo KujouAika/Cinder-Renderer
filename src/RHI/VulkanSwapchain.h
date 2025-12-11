@@ -27,7 +27,7 @@ public:
 
     virtual RHIFormat GetFormat() const override
     {
-        return RHIFormat::R8G8B8A8_UNORM; // TODO: 需匹配 SwapchainImageFormat
+        return RHIFormat::R8G8B8A8_UNORM; // TODO: RHIFormat 需匹配 SwapchainImageFormat
     }
     virtual uint32_t GetImageCount() const override
     {

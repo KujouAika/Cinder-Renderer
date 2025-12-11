@@ -1,9 +1,28 @@
 ﻿#pragma once
-#include "DeviceSelector.h"
 #include "Window.h"
 #include "vk_mem_alloc.h"
 #include "VulkanSwapchain.h"
 #include "RHI/RHIDevice.h"
+
+struct FQueueFamilyIndices
+{
+    std::optional<uint32_t> GraphicsFamily;
+    std::optional<uint32_t> PresentFamily;
+    std::optional<uint32_t> ComputeFamily;
+
+    bool IsComplete() const
+    {
+        return GraphicsFamily.has_value() && PresentFamily.has_value();
+    }
+};
+
+
+struct FSelectionResult
+{
+    VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+    FQueueFamilyIndices Indices;
+    int Score = 0;
+};
 
 class FVulkanDevice: public FRHIDevice
 {
@@ -24,11 +43,17 @@ public:
     FQueueFamilyIndices GetQueueFamilyIndices() const { return QueueIndices; }
     FVulkanSwapchain& GetSwapchain() const { check(Swapchain); return *Swapchain; }
 
+    static FSelectionResult Select(VkInstance Instance, VkSurfaceKHR Surface);
+
     void Init();
     void RecreateSwapchain();
     bool RenderFrame();
 
 private:
+    static FQueueFamilyIndices FindQueueFamilies(VkPhysicalDevice Device, VkSurfaceKHR Surface);
+    static bool CheckDeviceExtensionSupport(VkPhysicalDevice Device);
+    static int RateDeviceSuitability(VkPhysicalDevice Device, VkSurfaceKHR Surface);
+
     void CreateInstance();
     void SetupDebugMessenger();
     void CreateSurface();
