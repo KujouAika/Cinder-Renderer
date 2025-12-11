@@ -75,8 +75,8 @@ private:
     std::vector<VkCommandBuffer> CommandBuffers;
 
     std::vector<VkSemaphore> ImageAvailableSemaphores;
-    std::vector<VkSemaphore> RenderFinishedSemaphores;
-    std::vector<VkFence> InFlightFences;
-
-    int CurrentFrame = 0;
+    std::vector<VkSemaphore> PresentSemaphores;
+    VkSemaphore GraphicsTimelineSemaphore = VK_NULL_HANDLE;
+    uint64_t CurrentCpuFrame = 0;
+    uint64_t CurrentGpuFrame = 0;
 };

@@ -67,10 +67,7 @@ namespace { // 匿名命名空间，相当于 C 语言的 static 全局变量，
     }
 }
 
-FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj)
-{
-
-}
+FDeviceContext::FDeviceContext(FWindow& WindowObj) : WindowRef(WindowObj) {}
 
 void FDeviceContext::Init()
 {
@@ -105,19 +102,19 @@ FDeviceContext::~FDeviceContext()
         vkDeviceWaitIdle(LogicalDevice);
     }
 
+    if (GraphicsTimelineSemaphore != VK_NULL_HANDLE)
+    {
+        vkDestroySemaphore(LogicalDevice, GraphicsTimelineSemaphore, nullptr);
+    }
+
+    for (VkSemaphore Semaphore : PresentSemaphores)
+    {
+        vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
+    }
+
     for (VkSemaphore Semaphore : ImageAvailableSemaphores)
     {
         vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
-    }
-
-    for (VkSemaphore Semaphore : RenderFinishedSemaphores)
-    {
-        vkDestroySemaphore(LogicalDevice, Semaphore, nullptr);
-    }
-
-    for (VkFence Fence : InFlightFences)
-    {
-        vkDestroyFence(LogicalDevice, Fence, nullptr);
     }
 
     if (CommandPool != VK_NULL_HANDLE)
@@ -563,7 +560,7 @@ void FDeviceContext::CreateCommandPool()
 
 void FDeviceContext::CreateCommandBuffers()
 {
-    CommandBuffers.resize(Swapchain->GetImageViews().size());
+    CommandBuffers.resize(Swapchain->GetImages().size());
     VkCommandBufferAllocateInfo AllocInfo{};
     Utils::ZeroVulkanStruct(AllocInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     AllocInfo.commandPool = CommandPool;
@@ -585,8 +582,12 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
         throw std::runtime_error("failed to begin recording command buffer!");
     }
 
-    VkImageMemoryBarrier Barrier{};
-    Utils::ZeroVulkanStruct(Barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+    VkImageMemoryBarrier2 Barrier{};
+    Utils::ZeroVulkanStruct(Barrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2);
+    Barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+    Barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    Barrier.srcAccessMask = 0;
+    Barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
     Barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     Barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     Barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -597,16 +598,13 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
     Barrier.subresourceRange.levelCount = 1;
     Barrier.subresourceRange.baseArrayLayer = 0;
     Barrier.subresourceRange.layerCount = 1;
-    Barrier.srcAccessMask = 0;
-    Barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    vkCmdPipelineBarrier(
-        InCommandBuffer,
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &Barrier
-    );
+
+    VkDependencyInfo DependencyInfo{};
+    Utils::ZeroVulkanStruct(DependencyInfo, VK_STRUCTURE_TYPE_DEPENDENCY_INFO);
+    DependencyInfo.imageMemoryBarrierCount = 1;
+    DependencyInfo.pImageMemoryBarriers = &Barrier;
+
+    vkCmdPipelineBarrier2(InCommandBuffer, &DependencyInfo);
 
     VkRenderingAttachmentInfo ColorAttachment{};
     Utils::ZeroVulkanStruct(ColorAttachment, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
@@ -645,18 +643,18 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
 
     vkCmdEndRendering(InCommandBuffer);
 
-    VkImageMemoryBarrier PresentBarrier = Barrier;
-    PresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    PresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    PresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    VkImageMemoryBarrier2 PresentBarrier = Barrier;
+    PresentBarrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    PresentBarrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+
+    PresentBarrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT; // 或者不用设
     PresentBarrier.dstAccessMask = 0;
 
-    vkCmdPipelineBarrier(
-        InCommandBuffer,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        0, 0, nullptr, 0, nullptr, 1, &PresentBarrier
-    );
+    PresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    PresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    DependencyInfo.pImageMemoryBarriers = &PresentBarrier;
+    vkCmdPipelineBarrier2(InCommandBuffer, &DependencyInfo);
 
     if (vkEndCommandBuffer(InCommandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
@@ -665,23 +663,11 @@ void FDeviceContext::RecordCommandBuffers(VkCommandBuffer InCommandBuffer, uint3
 
 void FDeviceContext::CreateSyncObjects()
 {
-    InFlightFences.clear();
     ImageAvailableSemaphores.clear();
-    RenderFinishedSemaphores.clear();
-    InFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
     ImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    RenderFinishedSemaphores.resize(Swapchain->GetImages().size());
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
-        VkFenceCreateInfo FenceInfo{};
-        Utils::ZeroVulkanStruct(FenceInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-        FenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        if (vkCreateFence(LogicalDevice, &FenceInfo, nullptr, &InFlightFences[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
-        }
-
         VkSemaphoreCreateInfo SemaphoreInfo{};
         Utils::ZeroVulkanStruct(SemaphoreInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
         if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &ImageAvailableSemaphores[i]) != VK_SUCCESS)
@@ -690,23 +676,53 @@ void FDeviceContext::CreateSyncObjects()
         }
     }
 
-    for (size_t i = 0; i < Swapchain->GetImages().size(); i++)
-    {
-        VkSemaphoreCreateInfo SemaphoreInfo{};
-        Utils::ZeroVulkanStruct(SemaphoreInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-        if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &RenderFinishedSemaphores[i]) != VK_SUCCESS)
-        {
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
+    size_t ImageCount = Swapchain->GetImages().size();
+    PresentSemaphores.resize(ImageCount);
+
+    VkSemaphoreCreateInfo PresentSemaphoreInfo{};
+    Utils::ZeroVulkanStruct(PresentSemaphoreInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+
+    for (size_t i = 0; i < ImageCount; i++) {
+        if (vkCreateSemaphore(LogicalDevice, &PresentSemaphoreInfo, nullptr, &PresentSemaphores[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create present semaphore!");
         }
+    }
+
+    VkSemaphoreTypeCreateInfo TimelineCreateInfo{};
+    Utils::ZeroVulkanStruct(TimelineCreateInfo, VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO);
+    TimelineCreateInfo.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE;
+    TimelineCreateInfo.initialValue = 0;
+
+    VkSemaphoreCreateInfo SemaphoreInfo{};
+    Utils::ZeroVulkanStruct(SemaphoreInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+    SemaphoreInfo.pNext = &TimelineCreateInfo;
+    if (vkCreateSemaphore(LogicalDevice, &SemaphoreInfo, nullptr, &GraphicsTimelineSemaphore) != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create timeline semaphore!");
     }
 }
 
 bool FDeviceContext::RenderFrame()
 {
-    vkWaitForFences(LogicalDevice, 1, &InFlightFences[CurrentFrame], VK_TRUE, UINT64_MAX);
+    uint64_t WaitValue = 0;
+    if (CurrentCpuFrame >= MAX_FRAMES_IN_FLIGHT) {
+        WaitValue = CurrentCpuFrame + 1 - MAX_FRAMES_IN_FLIGHT; // 当前帧数减去最大帧数，得到需要等待的值
+
+        VkSemaphoreWaitInfo WaitInfo{};
+        Utils::ZeroVulkanStruct(WaitInfo, VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO);
+        WaitInfo.semaphoreCount = 1;
+        WaitInfo.pSemaphores = &GraphicsTimelineSemaphore;
+        WaitInfo.pValues = &WaitValue;
+
+        vkWaitSemaphores(LogicalDevice, &WaitInfo, UINT64_MAX);
+    }
+
+    uint32_t FrameIndex = CurrentCpuFrame % MAX_FRAMES_IN_FLIGHT;
     uint32_t ImageIndex;
+    
     VkResult result = vkAcquireNextImageKHR(LogicalDevice, Swapchain->GetHandle(), UINT64_MAX,
-        ImageAvailableSemaphores[CurrentFrame], VK_NULL_HANDLE, &ImageIndex);
+        ImageAvailableSemaphores[FrameIndex], VK_NULL_HANDLE, &ImageIndex);
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         return false;
@@ -717,40 +733,59 @@ bool FDeviceContext::RenderFrame()
         return false;
     }
 
-    vkResetFences(LogicalDevice, 1, &InFlightFences[CurrentFrame]);
     vkResetCommandBuffer(CommandBuffers[ImageIndex], 0);
     RecordCommandBuffers(CommandBuffers[ImageIndex], ImageIndex);
+
+    if (CommandBuffers[ImageIndex] == VK_NULL_HANDLE) {
+        throw std::runtime_error("Command Buffer is NULL! Check CreateCommandBuffers.");
+    }
+
+    CurrentCpuFrame++;
+
+    VkSemaphoreSubmitInfo WaitBinary{};
+    Utils::ZeroVulkanStruct(WaitBinary, VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO);
+    WaitBinary.semaphore = ImageAvailableSemaphores[FrameIndex];
+    WaitBinary.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    VkSemaphoreSubmitInfo SignalInfos[2];
+    Utils::ZeroVulkanStruct(SignalInfos[0], VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO);
+    SignalInfos[0].semaphore = GraphicsTimelineSemaphore;
+    SignalInfos[0].value = CurrentCpuFrame;
+    SignalInfos[0].stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+    Utils::ZeroVulkanStruct(SignalInfos[1], VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO);
+    SignalInfos[1].semaphore = PresentSemaphores[ImageIndex]; // 当前图片的信号量
+    SignalInfos[1].value = 0;
+    SignalInfos[1].stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    VkCommandBufferSubmitInfo CommandBufferInfo{};
+    Utils::ZeroVulkanStruct(CommandBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO);
+    CommandBufferInfo.commandBuffer = CommandBuffers[ImageIndex];
     
-    VkSubmitInfo SubmitInfo{};
-    Utils::ZeroVulkanStruct(SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-    
-    VkSemaphore WaitSemaphores[] = { ImageAvailableSemaphores[CurrentFrame] };
-    VkPipelineStageFlags WaitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    SubmitInfo.waitSemaphoreCount = 1;
-    SubmitInfo.pWaitSemaphores = WaitSemaphores;
-    SubmitInfo.pWaitDstStageMask = WaitStages;
-    SubmitInfo.commandBufferCount = 1;
-    SubmitInfo.pCommandBuffers = &CommandBuffers[ImageIndex];
-    
-    VkSemaphore SignalSemaphores[] = { RenderFinishedSemaphores[ImageIndex] };
-    SubmitInfo.signalSemaphoreCount = 1;
-    SubmitInfo.pSignalSemaphores = SignalSemaphores;
-    
-    if (vkQueueSubmit(GraphicsQueue, 1, &SubmitInfo, InFlightFences[CurrentFrame]) != VK_SUCCESS)
+    VkSubmitInfo2 SubmitInfo{};
+    Utils::ZeroVulkanStruct(SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO_2);
+    SubmitInfo.waitSemaphoreInfoCount = 1;
+    SubmitInfo.pWaitSemaphoreInfos = &WaitBinary;
+    SubmitInfo.commandBufferInfoCount = 1;
+    SubmitInfo.pCommandBufferInfos = &CommandBufferInfo;
+    SubmitInfo.signalSemaphoreInfoCount = 2;
+    SubmitInfo.pSignalSemaphoreInfos = SignalInfos;
+
+    if (vkQueueSubmit2(GraphicsQueue, 1, &SubmitInfo, VK_NULL_HANDLE) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to submit draw command buffer!");
-        return false;
     }
     
     VkPresentInfoKHR PresentInfo{};
     Utils::ZeroVulkanStruct(PresentInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
     PresentInfo.waitSemaphoreCount = 1;
-    PresentInfo.pWaitSemaphores = SignalSemaphores;
+    PresentInfo.pWaitSemaphores = &PresentSemaphores[ImageIndex];
     
     VkSwapchainKHR Swapchains[] = { Swapchain->GetHandle() };
     PresentInfo.swapchainCount = 1;
     PresentInfo.pSwapchains = Swapchains;
     PresentInfo.pImageIndices = &ImageIndex;
+
     result = vkQueuePresentKHR(PresentQueue, &PresentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
@@ -763,6 +798,5 @@ bool FDeviceContext::RenderFrame()
         return false;
     }
 
-    CurrentFrame = (CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     return true;
 }
