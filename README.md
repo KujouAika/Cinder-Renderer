@@ -22,8 +22,8 @@ Experiments with Vulkan1.3.
 ### Phase II: RHI Modernization
 *Transition from legacy Vulkan 1.0 constructs to modern 1.3+ standards.*
 
-- [ ] **Dynamic Rendering**: Remove all `VkRenderPass` and `VkFramebuffer` objects; migrate to `VK_KHR_dynamic_rendering`.
-- [ ] **Synchronization 2**: Replace binary semaphores with **Timeline Semaphores** and implement `vkCmdPipelineBarrier2`.
+- [x] **Dynamic Rendering**: Remove all `VkRenderPass` and `VkFramebuffer` objects; migrate to `VK_KHR_dynamic_rendering`.
+- [x] **Synchronization 2**: Replace binary semaphores with **Timeline Semaphores** and implement `vkCmdPipelineBarrier2`.
 - [ ] **Imageless Framebuffers**: Implement fallback architecture for mobile tile-based rendering optimizations.
 - [ ] **RHI Abstraction layer**: Finalize the separation between high-level rendering logic and low-level Vulkan calls.
 
